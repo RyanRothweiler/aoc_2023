@@ -1,10 +1,12 @@
+#![allow(unused_variables, dead_code)]
+
 use core::cmp::Ordering;
 use std::collections::BTreeSet;
 use std::fs;
 
 pub fn run() {
     let contents: String =
-        fs::read_to_string("resources/day1_input.txt").expect("Could not find the file.");
+        fs::read_to_string("resources/day_1_input.txt").expect("Could not find the file.");
 
     let mut sum: u32 = 0;
 
