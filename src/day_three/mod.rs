@@ -15,7 +15,7 @@ use std::fs;
  */
 pub fn run() {
     let contents: String =
-        fs::read_to_string("resources/day_3_testing_input.txt").expect("Couldn't find file.");
+        fs::read_to_string("resources/day_3_testing_single_number.txt").expect("Couldn't find file.");
 
     process(&contents);
 }
@@ -92,6 +92,7 @@ fn process(input: &str) -> u64 {
         }
     }
 
+    // Go through cells, find a symbol, then check all adjacent cells to find the numbers
     for y in 0..cells.height {
         for x in 0..cells.width {
             match cells.get(x, y) {
@@ -108,7 +109,7 @@ fn process(input: &str) -> u64 {
                                 //println!("checking {x_fin} {y_fin}");
                                 match check_direction(&mut cells, x_fin as usize, y_fin as usize) {
                                     Some(t) => {
-                                        println!("number {t}");
+                                        //println!("number {t}");
                                         sum = sum + t;
                                     },
                                     None => {}
@@ -135,6 +136,7 @@ fn check_direction(cells: &mut TwoDimArray<Cell>, x: usize, y: usize) -> Option<
             // Is that a number
             let c = d.data;
             if c.is_alphanumeric() {
+
                 // Expand to find the full number
                 let mut start_index: usize = x;
                 let mut end_index: usize = x;
@@ -157,7 +159,7 @@ fn check_direction(cells: &mut TwoDimArray<Cell>, x: usize, y: usize) -> Option<
 
                 // get end of number
                 loop {
-                    match cells.get(start_index, y) {
+                    match cells.get(end_index, y) {
                         Some(e) => {
                             if !e.data.is_alphanumeric() {
                                 break;
@@ -173,7 +175,7 @@ fn check_direction(cells: &mut TwoDimArray<Cell>, x: usize, y: usize) -> Option<
 
                 // Pull number into string
                 let mut val_string = String::new();
-                for i in (start_index + 1)..(end_index + 1) {
+                for i in (start_index + 1)..end_index {
                     match cells.get(i, y) {
                         Some(e) => {
                             val_string.push(e.data);
@@ -185,6 +187,8 @@ fn check_direction(cells: &mut TwoDimArray<Cell>, x: usize, y: usize) -> Option<
                     }
                 }
 
+                //println!("{x},{y} start->{start_index} end->{end_index}, str->{val_string}");
+
                 let val: u64 = match val_string.parse() {
                     Ok(t) => t,
                     Err(e) => {
@@ -193,10 +197,7 @@ fn check_direction(cells: &mut TwoDimArray<Cell>, x: usize, y: usize) -> Option<
                     }
                 };
 
-                //let val: u64= val_string.parse();
-
-                //println!("{x},{y} start->{start_index} end->{end_index}, num->{val_string} str->{val}");
-                //println!("{c}");
+                //println!("val->{val}");
                 return Some(val);
             }
         }
