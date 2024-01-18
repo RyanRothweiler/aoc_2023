@@ -14,8 +14,8 @@ use std::fs;
 
  */
 pub fn run() {
-    let contents: String =
-        fs::read_to_string("resources/day_3_testing_single_number.txt").expect("Couldn't find file.");
+    let contents: String = fs::read_to_string("resources/day_3_testing_single_number.txt")
+        .expect("Couldn't find file.");
 
     process(&contents);
 }
@@ -23,6 +23,16 @@ pub fn run() {
 #[derive(Clone)]
 struct Cell {
     data: char,
+    visited: bool,
+}
+
+impl Cell {
+    fn new() -> Cell {
+        Cell {
+            data: '0',
+            visited: false,
+        }
+    }
 }
 
 struct TwoDimArray<T> {
@@ -40,9 +50,9 @@ impl<T: std::clone::Clone> TwoDimArray<T> {
         }
     }
 
-    fn get(&self, x: usize, y: usize) -> Option<&T> {
+    fn get(&mut self, x: usize, y: usize) -> Option<&mut T> {
         let i = (y * self.width) + x;
-        match self.cells.get(i) {
+        match self.cells.get_mut(i) {
             Some(t) => return Some(t),
             None => return None,
         }
@@ -79,7 +89,7 @@ fn process(input: &str) -> u64 {
     let width = lines[0].len() - 1;
     let height = lines.len();
 
-    let mut cells = TwoDimArray::new(width, height, Cell { data: '0' });
+    let mut cells = TwoDimArray::new(width, height, Cell::new());
 
     // copy data into cells
     for x in 0..cells.width {
@@ -88,7 +98,14 @@ fn process(input: &str) -> u64 {
             let c = row[x];
             //println!("{c}");
 
-            cells.set(x, y, Cell { data: row[x] });
+            cells.set(
+                x,
+                y,
+                Cell {
+                    data: row[x],
+                    visited: false,
+                },
+            );
         }
     }
 
@@ -98,8 +115,10 @@ fn process(input: &str) -> u64 {
             match cells.get(x, y) {
                 Some(data) => {
                     let c = data.data;
-                    if c != '.' && !c.is_alphanumeric() {
+                    if c != '.' && !c.is_alphanumeric() && !data.visited {
                         //println!("symbol {c}");
+
+                        data.visited = true;
 
                         for dir in &directions {
                             let x_fin: i64 = (x as i64) + dir.x;
@@ -111,12 +130,11 @@ fn process(input: &str) -> u64 {
                                     Some(t) => {
                                         //println!("number {t}");
                                         sum = sum + t;
-                                    },
+                                    }
                                     None => {}
                                 };
                             }
                         }
-
                     }
                 }
                 None => {
@@ -135,8 +153,7 @@ fn check_direction(cells: &mut TwoDimArray<Cell>, x: usize, y: usize) -> Option<
         Some(d) => {
             // Is that a number
             let c = d.data;
-            if c.is_alphanumeric() {
-
+            if !d.visited && c.is_alphanumeric() {
                 // Expand to find the full number
                 let mut start_index: usize = x;
                 let mut end_index: usize = x;
@@ -145,12 +162,13 @@ fn check_direction(cells: &mut TwoDimArray<Cell>, x: usize, y: usize) -> Option<
                 loop {
                     match cells.get(start_index, y) {
                         Some(e) => {
-                            if !e.data.is_alphanumeric() {
+                            if !e.visited && !e.data.is_alphanumeric() {
                                 break;
                             } else {
                                 let zz = e.data;
                                 //println!("NO {zz}");
                                 start_index = start_index - 1;
+                                e.visited = true;
                             }
                         }
                         None => break,
@@ -161,12 +179,13 @@ fn check_direction(cells: &mut TwoDimArray<Cell>, x: usize, y: usize) -> Option<
                 loop {
                     match cells.get(end_index, y) {
                         Some(e) => {
-                            if !e.data.is_alphanumeric() {
+                            if !e.visited && !e.data.is_alphanumeric() {
                                 break;
                             } else {
                                 let zz = e.data;
                                 //println!("NO {zz}");
                                 end_index = end_index + 1;
+                                e.visited = true;
                             }
                         }
                         None => break,
@@ -211,7 +230,6 @@ fn check_direction(cells: &mut TwoDimArray<Cell>, x: usize, y: usize) -> Option<
 fn single_number() {
     let contents: String = fs::read_to_string("resources/day_3_testing_single_number.txt")
         .expect("Couldn't find file.");
-
     assert_eq!(process(&contents), 18);
 }
 
@@ -219,6 +237,12 @@ fn single_number() {
 fn single_number_edge() {
     let contents: String = fs::read_to_string("resources/day_3_testing_single_number_edge.txt")
         .expect("Couldn't find file.");
-
     assert_eq!(process(&contents), 18);
+}
+
+#[test]
+fn two() {
+    let contents: String =
+        fs::read_to_string("resources/day_3_testing_two.txt").expect("Couldn't find file.");
+    assert_eq!(process(&contents), 118);
 }
