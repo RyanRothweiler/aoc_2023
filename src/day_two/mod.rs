@@ -14,6 +14,8 @@ pub fn run() {
 
     // part 2
     //get_games_power();
+    
+    // part 3
 }
 
 // Finds the minimum number of marbles required for each game, then multiplies them together.

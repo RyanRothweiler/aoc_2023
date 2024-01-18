@@ -3,7 +3,14 @@
 use std::fs;
 
 /*
+This assumes that each instance of a number is only counted once
 
+This results in 118. The 100 is only counted once.
+..18
+...*
+@100
+
+Algo
 - build 2d array
 - iterate through array until find a symbol
 - iterate through every cell adjacent to the symbol
@@ -14,10 +21,12 @@ use std::fs;
 
  */
 pub fn run() {
-    let contents: String = fs::read_to_string("resources/day_3_testing_single_number.txt")
-        .expect("Couldn't find file.");
+    let contents: String =
+        fs::read_to_string("resources/day_3_input.txt").expect("Couldn't find file.");
+    //fs::read_to_string("resources/day_3_testing_rect.txt").expect("Couldn't find file.");
 
-    process(&contents);
+    let ret = process(&contents);
+    println!("final {ret}");
 }
 
 #[derive(Clone)]
@@ -88,25 +97,31 @@ fn process(input: &str) -> u64 {
     // -1 to remove the endline characters
     let width = lines[0].len() - 1;
     let height = lines.len();
+    println!("{width}x{height}");
 
     let mut cells = TwoDimArray::new(width, height, Cell::new());
 
     // copy data into cells
-    for x in 0..cells.width {
-        for y in 0..cells.height {
+    for y in 0..cells.height {
+        for x in 0..cells.width {
             let row: Vec<char> = lines[y].chars().collect();
-            let c = row[x];
-            //println!("{c}");
 
-            cells.set(
-                x,
-                y,
-                Cell {
-                    data: row[x],
-                    visited: false,
-                },
-            );
+            // handle extra empty lines
+            if x < row.len() {
+                let c = row[x];
+                print!("{c}");
+
+                cells.set(
+                    x,
+                    y,
+                    Cell {
+                        data: row[x],
+                        visited: false,
+                    },
+                );
+            }
         }
+        println!("");
     }
 
     // Go through cells, find a symbol, then check all adjacent cells to find the numbers
@@ -154,19 +169,24 @@ fn check_direction(cells: &mut TwoDimArray<Cell>, x: usize, y: usize) -> Option<
             // Is that a number
             let c = d.data;
             if !d.visited && c.is_alphanumeric() {
+                println!("starting {c}");
                 // Expand to find the full number
                 let mut start_index: usize = x;
                 let mut end_index: usize = x;
 
                 // get start of number
                 loop {
-                    match cells.get(start_index, y) {
+                    if start_index == 0 {
+                        break;
+                    }
+
+                    match cells.get(start_index - 1, y) {
                         Some(e) => {
-                            if !e.visited && !e.data.is_alphanumeric() {
+                            if !e.data.is_alphanumeric() {
                                 break;
                             } else {
                                 let zz = e.data;
-                                //println!("NO {zz}");
+                                println!("NO moving start to {zz}");
                                 start_index = start_index - 1;
                                 e.visited = true;
                             }
@@ -177,13 +197,13 @@ fn check_direction(cells: &mut TwoDimArray<Cell>, x: usize, y: usize) -> Option<
 
                 // get end of number
                 loop {
-                    match cells.get(end_index, y) {
+                    match cells.get(end_index + 1, y) {
                         Some(e) => {
-                            if !e.visited && !e.data.is_alphanumeric() {
+                            if !e.data.is_alphanumeric() {
                                 break;
                             } else {
                                 let zz = e.data;
-                                //println!("NO {zz}");
+                                println!("NO moving end to {zz}");
                                 end_index = end_index + 1;
                                 e.visited = true;
                             }
@@ -193,8 +213,11 @@ fn check_direction(cells: &mut TwoDimArray<Cell>, x: usize, y: usize) -> Option<
                 }
 
                 // Pull number into string
+                // start_index + 1 because we go one past what we need, and the end_index is exclusive so
+                // the -1 is implicit
                 let mut val_string = String::new();
-                for i in (start_index + 1)..end_index {
+
+                for i in start_index..(end_index + 1) {
                     match cells.get(i, y) {
                         Some(e) => {
                             val_string.push(e.data);
@@ -212,11 +235,14 @@ fn check_direction(cells: &mut TwoDimArray<Cell>, x: usize, y: usize) -> Option<
                     Ok(t) => t,
                     Err(e) => {
                         eprintln!("Error parsing string to number {e}");
+                        eprintln!(
+                            "{x},{y} start->{start_index} end->{end_index}, str->{val_string}"
+                        );
                         return None;
                     }
                 };
 
-                //println!("val->{val}");
+                println!("val->{val}");
                 return Some(val);
             }
         }
@@ -228,6 +254,7 @@ fn check_direction(cells: &mut TwoDimArray<Cell>, x: usize, y: usize) -> Option<
 
 #[test]
 fn single_number() {
+    // one number one symbol in the middle of the map
     let contents: String = fs::read_to_string("resources/day_3_testing_single_number.txt")
         .expect("Couldn't find file.");
     assert_eq!(process(&contents), 18);
@@ -235,6 +262,7 @@ fn single_number() {
 
 #[test]
 fn single_number_edge() {
+    // one number one symbol at the edge of the map
     let contents: String = fs::read_to_string("resources/day_3_testing_single_number_edge.txt")
         .expect("Couldn't find file.");
     assert_eq!(process(&contents), 18);
@@ -242,7 +270,24 @@ fn single_number_edge() {
 
 #[test]
 fn two() {
+    // two numbers around one symbol
     let contents: String =
         fs::read_to_string("resources/day_3_testing_two.txt").expect("Couldn't find file.");
     assert_eq!(process(&contents), 118);
+}
+
+#[test]
+fn two_two_symbols() {
+    // two numbers two symbols
+    let contents: String = fs::read_to_string("resources/day_3_testing_two_two_symbols.txt")
+        .expect("Couldn't find file.");
+    assert_eq!(process(&contents), 118);
+}
+
+#[test]
+fn rectangular() {
+    // test a rectangular map
+    let contents: String =
+        fs::read_to_string("resources/day_3_testing_rect.txt").expect("Couldn't find file.");
+    assert_eq!(process(&contents), 160);
 }
