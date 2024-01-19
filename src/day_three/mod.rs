@@ -25,7 +25,7 @@ pub fn run() {
         fs::read_to_string("resources/day_3_input.txt").expect("Couldn't find file.");
     //fs::read_to_string("resources/day_3_testing_rect.txt").expect("Couldn't find file.");
 
-    let ret = process(&contents);
+    let ret = process_gears(&contents);
     println!("final {ret}");
 }
 
@@ -78,40 +78,26 @@ struct V2I {
     y: i64,
 }
 
-fn process(input: &str) -> u64 {
-    let directions: Vec<V2I> = vec![
-        V2I { x: 1, y: 0 },
-        V2I { x: -1, y: 0 },
-        V2I { x: 0, y: 1 },
-        V2I { x: 0, y: -1 },
-        V2I { x: 1, y: -1 },
-        V2I { x: -1, y: 1 },
-        V2I { x: -1, y: -1 },
-        V2I { x: 1, y: 1 },
-    ];
-
-    let mut sum = 0;
-
+// convert string into 2d array
+fn build_array(input: &str) -> TwoDimArray<Cell> {
     let lines: Vec<&str> = input.split('\n').collect();
 
     // -1 to remove the endline characters
     let width = lines[0].len() - 1;
     let height = lines.len();
-    println!("{width}x{height}");
 
-    let mut cells = TwoDimArray::new(width, height, Cell::new());
+    let mut ret = TwoDimArray::new(width, height, Cell::new());
 
     // copy data into cells
-    for y in 0..cells.height {
-        for x in 0..cells.width {
+    for y in 0..ret.height {
+        for x in 0..ret.width {
             let row: Vec<char> = lines[y].chars().collect();
 
             // handle extra empty lines
             if x < row.len() {
                 let c = row[x];
-                print!("{c}");
 
-                cells.set(
+                ret.set(
                     x,
                     y,
                     Cell {
@@ -124,6 +110,81 @@ fn process(input: &str) -> u64 {
         println!("");
     }
 
+    return ret;
+}
+
+fn adjacents() -> Vec<V2I> {
+    vec![
+        V2I { x: 1, y: 0 },
+        V2I { x: -1, y: 0 },
+        V2I { x: 0, y: 1 },
+        V2I { x: 0, y: -1 },
+        V2I { x: 1, y: -1 },
+        V2I { x: -1, y: 1 },
+        V2I { x: -1, y: -1 },
+        V2I { x: 1, y: 1 },
+    ]
+}
+
+fn process_gears(input: &str) -> u64 {
+    let mut sum = 0;
+
+    let directions = adjacents();
+    let mut cells = build_array(input);
+
+    // Go through cells, find a symbol, then check all adjacent cells to find the numbers
+    for y in 0..cells.height {
+        for x in 0..cells.width {
+            match cells.get(x, y) {
+                Some(data) => {
+                    let c = data.data;
+
+                    // Is the symbol a gear?
+                    if c == '*' {
+                        data.visited = true;
+
+                        let mut ratio: u64 = 1;
+                        let mut adj_count: u64 = 0;
+
+                        for dir in &directions {
+                            let x_fin: i64 = (x as i64) + dir.x;
+                            let y_fin: i64 = (y as i64) + dir.y;
+
+                            if x_fin >= 0 && y_fin >= 0 {
+                                match check_direction(&mut cells, x_fin as usize, y_fin as usize) {
+                                    Some(t) => {
+                                        ratio = ratio * t;
+                                        adj_count = adj_count + 1;
+                                        println!("number {t}");
+                                        //sum = sum + t;
+                                    }
+                                    None => {}
+                                };
+                            }
+                        }
+
+                        if adj_count >= 2 {
+                            println!("      ratio {ratio}");
+                            sum = sum + ratio;
+                        }
+                    }
+                }
+                None => {
+                    eprintln!("Invalid index {x},{y}");
+                }
+            }
+        }
+    }
+
+    sum
+}
+
+fn process(input: &str) -> u64 {
+    let mut sum = 0;
+
+    let directions = adjacents();
+    let mut cells = build_array(input);
+
     // Go through cells, find a symbol, then check all adjacent cells to find the numbers
     for y in 0..cells.height {
         for x in 0..cells.width {
@@ -131,8 +192,6 @@ fn process(input: &str) -> u64 {
                 Some(data) => {
                     let c = data.data;
                     if c != '.' && !c.is_alphanumeric() && !data.visited {
-                        //println!("symbol {c}");
-
                         data.visited = true;
 
                         for dir in &directions {
@@ -140,10 +199,8 @@ fn process(input: &str) -> u64 {
                             let y_fin: i64 = (y as i64) + dir.y;
 
                             if x_fin >= 0 && y_fin >= 0 {
-                                //println!("checking {x_fin} {y_fin}");
                                 match check_direction(&mut cells, x_fin as usize, y_fin as usize) {
                                     Some(t) => {
-                                        //println!("number {t}");
                                         sum = sum + t;
                                     }
                                     None => {}
@@ -153,7 +210,7 @@ fn process(input: &str) -> u64 {
                     }
                 }
                 None => {
-                    //println!("Invalid index {x},{y}");
+                    eprintln!("Invalid index {x},{y}");
                 }
             }
         }
@@ -169,7 +226,6 @@ fn check_direction(cells: &mut TwoDimArray<Cell>, x: usize, y: usize) -> Option<
             // Is that a number
             let c = d.data;
             if !d.visited && c.is_alphanumeric() {
-                println!("starting {c}");
                 // Expand to find the full number
                 let mut start_index: usize = x;
                 let mut end_index: usize = x;
@@ -185,8 +241,6 @@ fn check_direction(cells: &mut TwoDimArray<Cell>, x: usize, y: usize) -> Option<
                             if !e.data.is_alphanumeric() {
                                 break;
                             } else {
-                                let zz = e.data;
-                                println!("NO moving start to {zz}");
                                 start_index = start_index - 1;
                                 e.visited = true;
                             }
@@ -202,8 +256,6 @@ fn check_direction(cells: &mut TwoDimArray<Cell>, x: usize, y: usize) -> Option<
                             if !e.data.is_alphanumeric() {
                                 break;
                             } else {
-                                let zz = e.data;
-                                println!("NO moving end to {zz}");
                                 end_index = end_index + 1;
                                 e.visited = true;
                             }
@@ -290,4 +342,20 @@ fn rectangular() {
     let contents: String =
         fs::read_to_string("resources/day_3_testing_rect.txt").expect("Couldn't find file.");
     assert_eq!(process(&contents), 160);
+}
+
+#[test]
+fn two_two_symbols_gears() {
+    // two numbers two symbols
+    let contents: String = fs::read_to_string("resources/day_3_testing_two_two_symbols.txt")
+        .expect("Couldn't find file.");
+    assert_eq!(process_gears(&contents), 1800);
+}
+
+#[test]
+fn two_two_symbols_gears_sample() {
+    // two numbers two symbols
+    let contents: String =
+        fs::read_to_string("resources/day_3_testing_gears.txt").expect("Couldn't find file.");
+    assert_eq!(process_gears(&contents), 467835);
 }
