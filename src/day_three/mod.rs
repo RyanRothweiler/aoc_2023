@@ -23,10 +23,9 @@ Algo
 pub fn run() {
     let contents: String =
         fs::read_to_string("resources/day_3_input.txt").expect("Couldn't find file.");
-    //fs::read_to_string("resources/day_3_testing_rect.txt").expect("Couldn't find file.");
 
     let ret = process_gears(&contents);
-    println!("final {ret}");
+    println!("{ret}");
 }
 
 #[derive(Clone)]
@@ -107,7 +106,6 @@ fn build_array(input: &str) -> TwoDimArray<Cell> {
                 );
             }
         }
-        println!("");
     }
 
     return ret;
@@ -155,8 +153,6 @@ fn process_gears(input: &str) -> u64 {
                                     Some(t) => {
                                         ratio = ratio * t;
                                         adj_count = adj_count + 1;
-                                        println!("number {t}");
-                                        //sum = sum + t;
                                     }
                                     None => {}
                                 };
@@ -164,7 +160,6 @@ fn process_gears(input: &str) -> u64 {
                         }
 
                         if adj_count >= 2 {
-                            println!("      ratio {ratio}");
                             sum = sum + ratio;
                         }
                     }
@@ -216,7 +211,6 @@ fn process(input: &str) -> u64 {
         }
     }
 
-    //println!("width {width}x{height}");
     sum
 }
 
@@ -281,8 +275,6 @@ fn check_direction(cells: &mut TwoDimArray<Cell>, x: usize, y: usize) -> Option<
                     }
                 }
 
-                //println!("{x},{y} start->{start_index} end->{end_index}, str->{val_string}");
-
                 let val: u64 = match val_string.parse() {
                     Ok(t) => t,
                     Err(e) => {
@@ -294,7 +286,6 @@ fn check_direction(cells: &mut TwoDimArray<Cell>, x: usize, y: usize) -> Option<
                     }
                 };
 
-                println!("val->{val}");
                 return Some(val);
             }
         }
