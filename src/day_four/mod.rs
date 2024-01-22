@@ -1,13 +1,19 @@
 #![allow(unused_variables, dead_code, unused_mut, unused_imports)]
 
-use std::fs;
-
 pub fn run() {
     let contents: String =
-        fs::read_to_string("resources/day_4/day_4_input.txt").expect("Unable to read file.");
+        std::fs::read_to_string("resources/day_4/day_4_input.txt").expect("Unable to read file.");
 
+    let sum: u64 = cards_count(&contents).expect("Error parsing input.");
+
+    println!("{sum}");
+}
+
+// part 1
+fn sum_points(input: &str) -> Option<u64> {
     let mut sum: u64 = 0;
-    for l in contents.split('\n') {
+
+    for l in input.split('\n') {
         // handle empty lines
         if l.len() > 1 {
             match calc_point_values(l.trim()) {
@@ -16,12 +22,69 @@ pub fn run() {
                 }
                 None => {
                     eprintln!("Error parsing cards.");
+                    return None;
                 }
             }
         }
     }
 
-    println!("{sum}");
+    Some(sum)
+}
+
+// part 2
+fn cards_count(input: &str) -> Option<u64> {
+    let mut sum: u64 = 0;
+
+    let lines: Vec<&str> = input.split('\n').collect();
+
+    // how many copies of each card we have.
+    // We always start with one copy so init to 1.
+    let mut cards_count: Vec<u64> = vec![1; lines.len()];
+
+    //for l in lines {
+    for i in 0..lines.len() {
+        let line = lines[i];
+
+        let current_card_count = match cards_count.get(i) {
+            Some(v) => *v,
+            None => {
+                eprintln!("Invalid card format.");
+                return None;
+            }
+        };
+
+        // handle empty lines
+        if line.len() > 1 {
+            match matching_count(line.trim()) {
+                Some(winning_count) => {
+                    // iterate down the next winning cards, adding one to the winning count
+                    for c in 0..winning_count {
+                        let cu: usize = c as usize + i + 1;
+
+                        match &cards_count.get(cu) {
+                            Some(current_accum) => {
+                                cards_count[cu] = *current_accum + current_card_count;
+                            }
+                            None => {
+                                eprintln!("Card format is invalid.");
+                                return None;
+                            }
+                        }
+                    }
+                }
+                None => {
+                    eprintln!("Error parsing cards.");
+                    return None;
+                }
+            }
+        }
+    }
+
+    for s in cards_count {
+        sum = sum + s;
+    }
+
+    Some(sum)
 }
 
 fn string_to_list(input: Vec<&str>) -> Option<Vec<u64>> {
@@ -43,10 +106,12 @@ fn string_to_list(input: Vec<&str>) -> Option<Vec<u64>> {
     return Some(nums);
 }
 
-/* format  is
+/* Input format  is
  * Card 1: 41 48 83 86 17 | 83 86  6 31 17  9 48 53
+ *
+ * Returns the count of matching numbers.
  */
-fn calc_point_values(input: &str) -> Option<u64> {
+fn matching_count(input: &str) -> Option<u64> {
     let card_data: Vec<&str> = input.split(':').collect();
 
     // numbers that we have and winning numbers
@@ -91,18 +156,31 @@ fn calc_point_values(input: &str) -> Option<u64> {
     };
 
     // check the numbers
-    let mut res: u64 = 0;
+    let mut count: u64 = 0;
     for w in winning_numbers {
         if have_numbers.contains(&w) {
-            if res == 0 {
-                res = 1;
-            } else {
-                res = res * 2;
-            }
+            count = count + 1;
         }
     }
 
-    Some(res)
+    Some(count)
+}
+
+// Returns the cards "points"
+fn calc_point_values(input: &str) -> Option<u64> {
+    match matching_count(input) {
+        Some(count) => {
+            let mut res: u64 = 0;
+            if count == 0 {
+                return Some(0);
+            } else if count == 1 {
+                return Some(1);
+            } else {
+                return Some(u64::pow(2, (count as u32) - 1));
+            }
+        }
+        None => return None,
+    };
 }
 
 #[test]
@@ -127,4 +205,18 @@ fn card_five() {
         calc_point_values("Card 5: 87 83 26 28 32 | 88 30 70 12 93 22 82 36"),
         Some(0)
     );
+}
+
+#[test]
+fn part_two_sample() {
+    let contents: String =
+        std::fs::read_to_string("resources/day_4/day_4_sample.txt").expect("Invalid file.");
+    assert_eq!(cards_count(&contents), Some(30));
+}
+
+#[test]
+fn part_two_sample_two() {
+    let contents: String =
+        std::fs::read_to_string("resources/day_4/day_4_sample_two.txt").expect("Invalid file.");
+    assert_eq!(cards_count(&contents), Some(15));
 }
