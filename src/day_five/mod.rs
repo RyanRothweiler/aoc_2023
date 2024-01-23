@@ -6,6 +6,11 @@ mod mapping;
 use mapping::Mapping;
 
 pub fn run() {
+    part_one();
+}
+
+// get lowest location from seeds
+fn part_one() -> i64 {
     let mut all_mappings = FullMapping {
         seed_to_soil: vec![],
         soil_to_fertalizer: vec![],
@@ -38,13 +43,78 @@ pub fn run() {
 
     for seed in seeds {
         let loc = mappings.seed_to_location(seed);
-        //println!("{loc}");
         if nearest_loc == -1 || loc < nearest_loc {
             nearest_loc = loc;
         }
     }
 
     println!("{nearest_loc}");
+    return nearest_loc;
+}
+
+// treat seeds as ranges, and find the smallest location
+// uses brute force. Could be improved by just transforming the ranges
+fn part_two() -> i64 {
+    let mut all_mappings = FullMapping {
+        seed_to_soil: vec![],
+        soil_to_fertalizer: vec![],
+        fertalizer_to_water: vec![],
+        water_to_light: vec![],
+        light_to_temperature: vec![],
+        temperature_to_humidity: vec![],
+        humidity_to_location: vec![],
+    };
+
+    let contents: String =
+        std::fs::read_to_string("resources/day_5/day_5_input.txt").expect("Invalid file source");
+
+    let lines: Vec<&str> = contents.split('\n').collect();
+
+    // get mappings
+    let mappings = FullMapping::parse(&contents).expect("Invalid file format.");
+
+    // get seeds
+    let mut seeds: Vec<SeedRange> = vec![];
+    let seed_line: Vec<&str> = lines[0].split(' ').collect();
+
+    // 1 becuase first entry is 'seed:'
+    let mut ind: usize = 1;
+    for i in 1..seed_line.len() {
+        if ind + 1 < seed_line.len() {
+            let mut rn = SeedRange {
+                start: 0,
+                length: 0,
+            };
+            rn.start = seed_line[ind].trim().parse().unwrap_or_else(|error| 0);
+            rn.length = seed_line[ind + 1].trim().parse().unwrap_or_else(|error| 0);
+
+            ind = ind + 2;
+
+            seeds.push(rn);
+        }
+    }
+
+    // this assumes no seed of value -1
+    let mut nearest_loc = -1;
+    for seed in seeds {
+        println!("{seed:?}");
+
+        for i in seed.start..seed.start + seed.length {
+            let loc = mappings.seed_to_location(i);
+            if nearest_loc == -1 || loc < nearest_loc {
+                nearest_loc = loc;
+            }
+        }
+    }
+
+    println!("{nearest_loc}");
+    return nearest_loc;
+}
+
+#[derive(Debug)]
+struct SeedRange {
+    start: i64,
+    length: i64,
 }
 
 // a kind of tokenizer
@@ -275,4 +345,10 @@ fn full_sample_conversions() {
     assert_eq!(mappings.seed_to_location(14), 43);
     assert_eq!(mappings.seed_to_location(55), 86);
     assert_eq!(mappings.seed_to_location(13), 35);
+}
+
+#[test]
+fn answer_part_one() {
+    let val = part_one();
+    assert_eq!(val, 600279879);
 }

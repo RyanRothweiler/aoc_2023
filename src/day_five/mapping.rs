@@ -23,14 +23,11 @@ impl Mapping {
             let source: i64 = inputs[1].trim().parse().unwrap_or_else(|error| 0);
             let range: i64 = inputs[2].trim().parse().unwrap_or_else(|error| 0);
 
-            //println!("{dest} {source} {range}");
             ret.push(Mapping::new(dest, source, range));
 
             lineizer.current_line = lineizer.current_line + 1;
         }
 
-        //println!("");
-        //ret.reverse();
         return ret;
     }
 
