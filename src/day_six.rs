@@ -1,10 +1,19 @@
 #![allow(unused_variables, dead_code, unused_mut, unused_imports)]
 
 pub fn run() {
-    part_one();
+    part_two();
 }
 
-pub fn part_one() -> usize {
+fn part_two() -> usize {
+    let track = Track {
+        time: 44806572,
+        record: 208158110501102,
+    };
+
+    return track.get_winning_options().len();
+}
+
+fn part_one() -> usize {
     let first_track = Track {
         time: 44,
         record: 208,
@@ -105,4 +114,9 @@ fn winning_options() {
 #[test]
 fn part_one_answer() {
     assert_eq!(part_one(), 32076);
+}
+
+#[test]
+fn part_two_answer() {
+    assert_eq!(part_two(), 34278221);
 }
