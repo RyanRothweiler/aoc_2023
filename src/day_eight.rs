@@ -112,6 +112,8 @@ fn steps_count(file: &str) -> Result<i32, String> {
     Ok(0)
 }
 
+// code is setup for part_two. these only work on part one
+/*
 #[test]
 fn sample() {
     assert_eq!(steps_count("resources/day_8/day_8_sample.txt").unwrap(), 2);
@@ -125,7 +127,6 @@ fn sample_cycle() {
     );
 }
 
-/*
 #[test]
 fn part_one_answer() {
     assert_eq!(
