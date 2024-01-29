@@ -27,8 +27,7 @@ pub fn run() {
             seq.push(n);
         }
 
-
-        sum += pattern_next(seq);
+        sum += pattern_prev(seq);
     }
 
     println!("{sum}");
@@ -39,7 +38,7 @@ struct Row {
     nums: Vec<i64>,
 }
 
-fn pattern_next(input: Vec<i64>) -> i64 {
+fn build_rows(input: Vec<i64>) -> Vec<Row>{
     let mut rows: Vec<Row> = vec![];
     rows.push(Row { nums: input });
 
@@ -53,8 +52,6 @@ fn pattern_next(input: Vec<i64>) -> i64 {
             let dif = rows[row_curr].nums[n] - rows[row_curr].nums[n - 1];
             next_row.nums.push(dif);
 
-            //print!("{dif} ");
-
             if dif != 0 {
                 all_zero = false;
             }
@@ -63,32 +60,45 @@ fn pattern_next(input: Vec<i64>) -> i64 {
         rows.push(next_row);
         row_curr += 1;
 
-        //println!("");
-
         if all_zero {
             break;
         }
     }
 
-    //println!(" --- back up ---");
+    return rows;
+}
+
+fn pattern_next(input: Vec<i64>) -> i64 {
+    let mut rows: Vec<Row> = build_rows(input);
 
     // move up the rows adding the new ending value
     // reverse the rows, so the bottom (the full 0 row) is at the top. easier to loop over.
     let mut new: i64 = 0;
     rows.reverse();
     for n in 1..rows.len() {
-        for num in &rows[n].nums {
-            //print!("{num} ");
-        }
 
         let prev_row: i64 = *rows[n - 1].nums.last().unwrap();
         let curr_last: i64 = *rows[n].nums.last().unwrap();
         new = prev_row + curr_last;
         rows[n].nums.push(new);
+    }
 
-        //print!("|| {prev_row} + {curr_last} = {new}");
+    return new;
+}
 
-        //println!("");
+fn pattern_prev(input: Vec<i64>) -> i64 {
+    let mut rows: Vec<Row> = build_rows(input);
+
+    // move up the rows adding the new ending value
+    // reverse the rows, so the bottom (the full 0 row) is at the top. easier to loop over.
+    let mut new: i64 = 0;
+    rows.reverse();
+    for n in 1..rows.len() {
+
+        let prev_row: i64 = *rows[n - 1].nums.first().unwrap();
+        let curr_last: i64 = *rows[n].nums.first().unwrap();
+        new = curr_last - prev_row;
+        rows[n].nums.insert(0, new);
     }
 
     return new;
@@ -107,6 +117,11 @@ fn three_layer() {
 #[test]
 fn sample_three() {
     assert_eq!(pattern_next(vec![10, 13, 16, 21, 30, 45]), 68);
+}
+
+#[test]
+fn sample_three_prev() {
+    assert_eq!(pattern_prev(vec![10, 13, 16, 21, 30, 45]), 5);
 }
 
 #[test]
@@ -130,9 +145,35 @@ fn part_one() {
             seq.push(n);
         }
 
-
         sum += pattern_next(seq);
     }
 
     assert_eq!(sum, 2008960228);
+}
+
+#[test]
+fn part_two() {
+    let contents = std::fs::read_to_string("resources/day_9/day_9_input.txt").unwrap();
+
+    //let mut answers: Vec<i64> = vec![];
+    let mut sum: i64 = 0;
+    let lines: Vec<&str> = contents.split('\n').collect();
+
+    for l in lines {
+        if l.len() == 0 {
+            continue;
+        }
+
+        // convert list of strings
+        let mut seq: Vec<i64> = vec![];
+        let nums_string: Vec<&str> = l.split(' ').collect();
+        for ns in nums_string {
+            let n: i64 = ns.trim().parse().unwrap_or_else(|error| 0);
+            seq.push(n);
+        }
+
+        sum += pattern_prev(seq);
+    }
+
+    assert_eq!(sum, 1097);
 }
