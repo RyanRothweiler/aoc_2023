@@ -43,6 +43,7 @@ impl Cell {
     }
 }
 
+// TODO remove this and use the standard one
 struct TwoDimArray<T> {
     cells: Vec<T>,
     width: usize,
