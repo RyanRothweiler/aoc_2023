@@ -1,6 +1,6 @@
 #![allow(dead_code)]
 
-use crate::v2::V2;
+use crate::perma::v2::V2;
 
 pub struct TwoD<T> {
     cells: Vec<T>,
@@ -17,6 +17,15 @@ impl<T: std::clone::Clone> TwoD<T> {
         }
     }
 
+    pub fn width(&self) -> usize {
+        self.width
+    }
+
+    pub fn height(&self) -> usize {
+        self.height
+    }
+
+    // TODO change this to get_mut and add a non mut get option
     pub fn get(&mut self, x: usize, y: usize) -> Option<&mut T> {
         let i = (y * self.width) + x;
         match self.cells.get_mut(i) {

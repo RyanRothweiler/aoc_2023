@@ -1,5 +1,4 @@
-mod twod;
-mod v2;
+mod perma;
 
 mod day_one;
 mod day_two;
