@@ -15,9 +15,9 @@
 
 use crate::perma::twod::TwoD;
 use crate::perma::v2::V2;
-
+ 
 pub fn run() {
-    let v = part_one("resources/inputs/day_11.txt");
+    let v = calculate_distance("resources/inputs/day_11.txt", 1_000_000);
     println!("{v}");
 }
 
@@ -90,7 +90,6 @@ fn build_map(input: &str) -> (TwoD<char>, Vec<Star>) {
     for y in 0..height {
         let line = lines[y];
 
-        print!("{line}");
         let chars: Vec<char> = line.trim().chars().collect();
         if chars.len() <= 1 {
             continue;
@@ -98,7 +97,6 @@ fn build_map(input: &str) -> (TwoD<char>, Vec<Star>) {
 
         for x in 0..width {
             let c = chars[x];
-            print!("{c}");
 
             map_start.set(x, y, chars[x]);
 
@@ -114,19 +112,20 @@ fn build_map(input: &str) -> (TwoD<char>, Vec<Star>) {
     return (map_start, stars);
 }
 
-fn expand_stars(empties: (Vec<i64>, Vec<i64>), stars: &mut Vec<Star>) {
+// replace 1 empty row / col with the expansion_rate val
+fn expand_stars(empties: (Vec<i64>, Vec<i64>), stars: &mut Vec<Star>, expansion_rate: i64) {
     // expand out star positions
     for r in empties.0 {
         for s in stars.iter_mut() {
             if s.orig.x > r {
-                s.expanded.x += 1;
+                s.expanded.x += expansion_rate - 1;
             }
         }
     }
     for r in empties.1 {
         for s in stars.iter_mut() {
             if s.orig.y > r {
-                s.expanded.y += 1;
+                s.expanded.y += expansion_rate - 1;
             }
         }
     }
@@ -148,7 +147,7 @@ fn sum_lengths(stars: &Vec<Star>) -> i64 {
     return sum / 2;
 }
 
-fn part_one(input: &str) -> i64 {
+fn calculate_distance(input: &str, expansion_rate: i64) -> i64 {
     let contents = std::fs::read_to_string(input).unwrap();
 
     let map = build_map(&contents);
@@ -157,13 +156,13 @@ fn part_one(input: &str) -> i64 {
 
     let empties = get_empty_cols_rows(&mut map_start);
 
-    expand_stars(empties, &mut stars);
+    expand_stars(empties, &mut stars, expansion_rate);
 
     return sum_lengths(&stars);
 }
 
 #[test]
-fn sample() {
+fn sample_part_one() {
     let contents = std::fs::read_to_string("resources/day_11/day_11_sample.txt").unwrap();
 
     let map = build_map(&contents);
@@ -179,7 +178,7 @@ fn sample() {
     assert_eq!(empties.0[1], 5);
     assert_eq!(empties.0[2], 8);
 
-    expand_stars(empties, &mut stars);
+    expand_stars(empties, &mut stars, 2);
 
     assert_eq!(stars[0].expanded, V2::new(4, 0));
     assert_eq!(stars[1].expanded, V2::new(9, 1));
@@ -194,6 +193,12 @@ fn sample() {
     let v = sum_lengths(&stars);
     assert_eq!(v, 374);
 
-    let v = part_one("resources/day_11/day_11_sample.txt");
+    let v = calculate_distance("resources/day_11/day_11_sample.txt", 2);
     assert_eq!(v, 374);
+}
+
+#[test]
+fn sample_part_two(){ 
+    let v = calculate_distance("resources/day_11/day_11_sample.txt", 100);
+    assert_eq!(v, 8410);
 }
