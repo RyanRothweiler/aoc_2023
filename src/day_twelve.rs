@@ -8,8 +8,29 @@
 )]
 
 pub fn run() {
-    //permutations(5);
+    let v = part_one("resources/inputs/day_12.txt");
+    println!("{v}");
 }
+
+fn part_one(file_path: &str) -> i64 {
+    let content = std::fs::read_to_string(file_path).unwrap();
+
+    let mut count = 0;
+    let lines: Vec<&str> = content.split('\n').collect();
+    for l in lines {
+        let line = l.trim();
+        if line.len() > 1 {
+            let perms = count_permutations(State::from_string(line));
+            println!("{line} -> {perms}");
+            count += perms;
+        }
+    }
+
+    return count;
+}
+
+//.??.?.?#?##?#???#?? 1,11 -> 6
+//.#......###########
 
 #[derive(Eq, PartialEq, Debug, Copy, Clone)]
 enum Spring {
@@ -111,9 +132,13 @@ impl State {
 fn count_permutations(input: State) -> i64 {
     let mut count = 0;
 
-    // got through all the numbers. So this is a valid configuration.
+    // got through all the numbers
     if input.groups.len() == 0 {
-        return 1;
+        if input.springs.contains(&Spring::Broken) {
+            return 0;
+        } else {
+            return 1;
+        }
     }
 
     // No more room for springs. So not a valid configuration.
@@ -126,14 +151,34 @@ fn count_permutations(input: State) -> i64 {
 
     for i in 0..input.springs.len() {
         if input.fit_spring(i, group_size) {
-
-            // that was the last group to place, so this is a valid configuration
-            if input.groups.len() == 1 {
-                count += 1;
-                continue;
+            // if we have moved past a working spring that is separated from this spring then we
+            // have created another group, which makes this placement invalid
+            let start = i as i64 - 1;
+            if start > 0 {
+                for r in 0..start {
+                    let ur = usize::try_from(r).unwrap();
+                    if input.springs[ur] == Spring::Broken {
+                        return count;
+                    }
+                }
             }
 
             let split_point = i + group_size + 1;
+
+            // that was the last group to place
+            if input.groups.len() == 1 {
+                let mut found = false;
+                for s in split_point..input.springs.len() {
+                    if input.springs[s] == Spring::Broken {
+                        found = true;
+                        break;
+                    }
+                }
+                if !found {
+                    count += 1;
+                }
+                continue;
+            }
 
             // If we would need to split longer than the available springs then not a valid
             // configuration because no more room for springs.
@@ -146,6 +191,7 @@ fn count_permutations(input: State) -> i64 {
             sub_state.groups.remove(0);
             sub_state.springs = sub_state.springs.split_off(split_point);
 
+            // continue onto the next group
             count += count_permutations(sub_state);
         }
     }
@@ -155,11 +201,11 @@ fn count_permutations(input: State) -> i64 {
 
 #[test]
 fn state_parse() {
-    let state = State::from_string("##..?? 1,2,3");
+    let state = State::from_string("##..?? 1,2,30");
     assert_eq!(state.groups.len(), 3);
     assert_eq!(state.groups[0], 1);
     assert_eq!(state.groups[1], 2);
-    assert_eq!(state.groups[2], 3);
+    assert_eq!(state.groups[2], 30);
 
     assert_eq!(state.springs.len(), 6);
     assert_eq!(state.springs[0], Spring::Broken);
@@ -244,14 +290,50 @@ fn permutations() {
     assert_eq!(count_permutations(State::from_string("??? 3")), 1);
     assert_eq!(count_permutations(State::from_string("??? 4")), 0);
 
-    assert_eq!(count_permutations(State::from_string("??? 1,1")), 1);
+    assert_eq!(count_permutations(State::from_string("?#?? 1")), 1);
 
+    assert_eq!(
+        count_permutations(State::from_string("#....######..#####. 1,6,5")),
+        1
+    );
+    assert_eq!(count_permutations(State::from_string("#.#?. 1,1")), 1);
+    assert_eq!(count_permutations(State::from_string("??? 1,1")), 1);
     assert_eq!(count_permutations(State::from_string("??? 1,1,1")), 0);
 
     assert_eq!(count_permutations(State::from_string("???.### 1,1,3")), 1);
-    assert_eq!(count_permutations(State::from_string(".??..??...?##. 1,1,3")), 4);
-    assert_eq!(count_permutations(State::from_string("?#?#?#?#?#?#?#? 1,3,1,6")), 1);
-    assert_eq!(count_permutations(State::from_string("????.#...#... 4,1,1")), 1);
-    assert_eq!(count_permutations(State::from_string("????.######..#####. 1,6,5")), 4);
-    assert_eq!(count_permutations(State::from_string("?###???????? 3,2,1")), 10);
+
+    assert_eq!(
+        count_permutations(State::from_string(".??..??...?##. 1,1,3")),
+        4
+    );
+    assert_eq!(
+        count_permutations(State::from_string("?#?#?#?#?#?#?#? 1,3,1,6")),
+        1
+    );
+    assert_eq!(
+        count_permutations(State::from_string("????.#...#... 4,1,1")),
+        1
+    );
+    assert_eq!(
+        count_permutations(State::from_string("????.######..#####. 1,6,5")),
+        4
+    );
+    assert_eq!(
+        count_permutations(State::from_string("?###???????? 3,2,1")),
+        10
+    );
+    assert_eq!(
+        count_permutations(State::from_string("?#.??????#??#?#?#?#? 1,1,15")),
+        1
+    );
+
+    assert_eq!(
+        count_permutations(State::from_string(".##.?#??.#.?# 2,1,1,1")),
+        1
+    );
+}
+
+#[test]
+fn sample() {
+    assert_eq!(part_one("resources/day_12/sample.txt"), 31);
 }
