@@ -1,7 +1,8 @@
 /*
  * Some improvements
  * - use a struct instead of the tuples.
- * - can probably expand the rows / colums to work in with any dimensions
+ * - can probably expand the rows / colums to work in with any dimensions.
+ * - double counting the pairs.
  */
 
 #![allow(
