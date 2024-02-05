@@ -40,6 +40,7 @@ impl Spring {
     }
 }
 
+#[derive(Clone)]
 struct State {
     springs: Vec<Spring>,
     groups: Vec<i64>,
@@ -80,7 +81,7 @@ impl State {
         if spring_len + spring_start > self.springs.len() {
             return false;
         }
-         
+
         // middle needs to be all broken
         for i in 0..spring_len {
             if !Spring::can_be_broken(self.springs[spring_start + i]) {
@@ -93,7 +94,7 @@ impl State {
             if !Spring::can_be_working(self.springs[spring_start - 1]) {
                 return false;
             }
-        } 
+        }
 
         // if end not on edge then must have working after spring_start + spring_len
         let end_i = spring_start + spring_len;
@@ -103,137 +104,54 @@ impl State {
             }
         }
 
-        /*
-        let mut curr_index = 0;
-
-        // if not on edge then must start with .
-        if spring_start > 0 {
-            // start must be working
-            if !Spring::can_be_working(self.springs[spring_start]) {
-                return false;
-            }
-
-            curr_index += 1;
-        }
-
-        // middle needs to be all broken
-        for i in 0..spring_len {
-            if !Spring::can_be_broken(self.springs[curr_index]) {
-                return false;
-            }
-
-            curr_index += 1;
-        }
-
-        // if we're on the edge then we're good
-        if curr_index == self.springs.len() {
-            return true;
-        }
-
-        if !Spring::can_be_working(self.springs[curr_index]) {
-            return false;
-        }
-        */
-
         return true;
     }
 }
 
-/*
-// returns the number of ways you can fit the first group
-fn fit_first_group_count(input_state: State) -> i64 {
-    // no groups or no springs!
-    if input_state.groups.len() == 0 || input_state.springs.len() == 0 {
+fn count_permutations(input: State) -> i64 {
+    let mut count = 0;
+
+    // got through all the numbers. So this is a valid configuration.
+    if input.groups.len() == 0 {
+        return 1;
+    }
+
+    // No more room for springs. So not a valid configuration.
+    if input.springs.len() == 0 {
         return 0;
     }
 
-    let group_size = input_state.groups[0];
+    // get the first group in the list
+    let group_size = usize::try_from(*input.groups.get(0).unwrap()).unwrap();
 
-    // no space for a group of that size
-    if state.springs.len() < group_size {
-        return 0;
-    }
+    for i in 0..input.springs.len() {
+        if input.fit_spring(i, group_size) {
 
-    let i = 0;
-    let space_count = 0;
-    loop {
-        // ran out of room
-        if i > state.springs.len() {
-            break;
+            // that was the last group to place, so this is a valid configuration
+            if input.groups.len() == 1 {
+                count += 1;
+                continue;
+            }
+
+            let split_point = i + group_size + 1;
+
+            // If we would need to split longer than the available springs then not a valid
+            // configuration because no more room for springs.
+            if split_point >= input.springs.len() {
+                return count;
+            }
+
+            // now check the sub spring without the current number
+            let mut sub_state = input.clone();
+            sub_state.groups.remove(0);
+            sub_state.springs = sub_state.springs.split_off(split_point);
+
+            count += count_permutations(sub_state);
         }
-
-        // found space!
-        if space_count == group_size {
-
-        }
     }
 
-    return 0;
+    return count;
 }
-*/
-
-// returns true if damaged, false if operational
-// 1 == # (damaged) 0 == . (operational)
-fn get_broken(num: i32, index: i32) -> bool {
-    let i: i32 = (num >> index) & 1;
-    return i == 1;
-}
-
-/*
-fn valid(num: i64, bit_len: i64, spec: Vec<i64>) -> bool {
-
-    let curr: i64 = 0;
-
-    // move to first group
-    loop {
-        if curr > bit_len {
-            // no groups, automatically not valid
-            return false;
-        }
-
-        if curr
-    }
-
-    let group_size: i64 = 0;
-    loop {
-        if curr > bit_len  {
-            break;
-        }
-
-        curr += 1;
-        group_size += 1;
-    }
-
-
-    return true;
-}
-
-fn permutations(bits: u32) {
-    let count = 2_i64.pow(bits);
-    for num in 0..count {
-        println!("{:b}", num);
-    }
-}
-*/
-
-/*
-#[test]
-fn is_broken() {
-    assert_eq!(get_broken(0, 0), false);
-    assert_eq!(get_broken(1, 0), true);
-
-    // 0x10
-    assert_eq!(get_broken(2, 0), false);
-    assert_eq!(get_broken(2, 1), true);
-    assert_eq!(get_broken(2, 3), false);
-    assert_eq!(get_broken(2, 4), false);
-
-    // 0x11
-    assert_eq!(get_broken(3, 0), true);
-    assert_eq!(get_broken(3, 1), true);
-    assert_eq!(get_broken(3, 2), false);
-}
-*/
 
 #[test]
 fn state_parse() {
@@ -299,28 +217,41 @@ fn fit_spring() {
     assert_eq!(state.fit_spring(1, 2), true);
     assert_eq!(state.fit_spring(2, 2), false);
 
-    /*
-    assert_eq!(state.fit_spring(0, 2), true);
+    // length of three has only one option
     assert_eq!(state.fit_spring(0, 3), true);
-    assert_eq!(state.fit_spring(0, 4), false);
-
-    assert_eq!(state.fit_spring(1, 1), false);
-    */
-
-    /*
-    //assert_eq!(state.fit_spring(0, 2), true);
-
-    assert_eq!(state.fit_spring(0, 3), true);
-    assert_eq!(state.fit_spring(0, 4), false);
-    assert_eq!(state.fit_spring(0, 5), false);
-
-    assert_eq!(state.fit_spring(1, 1), true);
-    assert_eq!(state.fit_spring(1, 2), true);
     assert_eq!(state.fit_spring(1, 3), false);
-    assert_eq!(state.fit_spring(1, 4), false);
 
-    assert_eq!(state.fit_spring(2, 1), true);
+    let state = State::from_string("?#?#? 1");
+
+    // length of one
+    assert_eq!(state.fit_spring(0, 1), false);
+    assert_eq!(state.fit_spring(1, 1), true);
+    assert_eq!(state.fit_spring(2, 1), false);
+    assert_eq!(state.fit_spring(3, 1), true);
+    assert_eq!(state.fit_spring(4, 1), false);
+
+    // length of two
+    assert_eq!(state.fit_spring(0, 2), true);
+    assert_eq!(state.fit_spring(1, 2), false);
     assert_eq!(state.fit_spring(2, 2), false);
-    assert_eq!(state.fit_spring(2, 3), false);
-    */
+    assert_eq!(state.fit_spring(3, 2), true);
+}
+
+#[test]
+fn permutations() {
+    assert_eq!(count_permutations(State::from_string("??? 1")), 3);
+    assert_eq!(count_permutations(State::from_string("??? 2")), 2);
+    assert_eq!(count_permutations(State::from_string("??? 3")), 1);
+    assert_eq!(count_permutations(State::from_string("??? 4")), 0);
+
+    assert_eq!(count_permutations(State::from_string("??? 1,1")), 1);
+
+    assert_eq!(count_permutations(State::from_string("??? 1,1,1")), 0);
+
+    assert_eq!(count_permutations(State::from_string("???.### 1,1,3")), 1);
+    assert_eq!(count_permutations(State::from_string(".??..??...?##. 1,1,3")), 4);
+    assert_eq!(count_permutations(State::from_string("?#?#?#?#?#?#?#? 1,3,1,6")), 1);
+    assert_eq!(count_permutations(State::from_string("????.#...#... 4,1,1")), 1);
+    assert_eq!(count_permutations(State::from_string("????.######..#####. 1,6,5")), 4);
+    assert_eq!(count_permutations(State::from_string("?###???????? 3,2,1")), 10);
 }
