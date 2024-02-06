@@ -7,21 +7,24 @@
     unused_labels
 )]
 
+use std::collections::HashMap;
+
 pub fn run() {
-    let v = part_one("resources/inputs/day_12.txt");
+    let v = sum_permutations("resources/inputs/day_12.txt", 5);
     println!("{v}");
 }
 
-fn part_one(file_path: &str) -> i64 {
+fn sum_permutations(file_path: &str, copies_count: i64) -> i64 {
     let content = std::fs::read_to_string(file_path).unwrap();
+
+    let mut cache: HashMap<State, i64> = HashMap::new();
 
     let mut count = 0;
     let lines: Vec<&str> = content.split('\n').collect();
     for l in lines {
         let line = l.trim();
         if line.len() > 1 {
-            let perms = count_permutations(State::from_string(line));
-            println!("{line} -> {perms}");
+            let perms = count_permutations(State::from_string(line, copies_count), &mut cache);
             count += perms;
         }
     }
@@ -29,10 +32,7 @@ fn part_one(file_path: &str) -> i64 {
     return count;
 }
 
-//.??.?.?#?##?#???#?? 1,11 -> 6
-//.#......###########
-
-#[derive(Eq, PartialEq, Debug, Copy, Clone)]
+#[derive(Eq, PartialEq, Debug, Copy, Clone, Hash)]
 enum Spring {
     // .
     Working,
@@ -61,14 +61,15 @@ impl Spring {
     }
 }
 
-#[derive(Clone)]
+#[derive(Clone, Hash, Eq, PartialEq)]
 struct State {
     springs: Vec<Spring>,
     groups: Vec<i64>,
 }
 
 impl State {
-    fn from_string(input: &str) -> State {
+    // number of copies to return. so copies_count of 1 means just return the file.
+    fn from_string(input: &str, copies_count: i64) -> State {
         let mut ret = State {
             springs: vec![],
             groups: vec![],
@@ -90,6 +91,15 @@ impl State {
         for g in groups {
             // Could do better error checking here.
             ret.groups.push(g.parse().unwrap());
+        }
+
+        // "unfold" make copies
+        let mut springs_orig = ret.springs.clone();
+        let mut groups_orig = ret.groups.clone();
+        for c in 0..(copies_count - 1) {
+            ret.springs.push(Spring::Unknown);
+            ret.springs.append(&mut springs_orig.clone());
+            ret.groups.append(&mut groups_orig.clone());
         }
 
         return ret;
@@ -129,7 +139,14 @@ impl State {
     }
 }
 
-fn count_permutations(input: State) -> i64 {
+fn count_permutations(input: State, cache: &mut HashMap<State, i64>) -> i64 {
+    match cache.get(&input) {
+        Some(v) => {
+            return *v;
+        }
+        None => {}
+    }
+
     let mut count = 0;
 
     // got through all the numbers
@@ -158,6 +175,7 @@ fn count_permutations(input: State) -> i64 {
                 for r in 0..start {
                     let ur = usize::try_from(r).unwrap();
                     if input.springs[ur] == Spring::Broken {
+                        cache.insert(input, count);
                         return count;
                     }
                 }
@@ -183,6 +201,7 @@ fn count_permutations(input: State) -> i64 {
             // If we would need to split longer than the available springs then not a valid
             // configuration because no more room for springs.
             if split_point >= input.springs.len() {
+                cache.insert(input, count);
                 return count;
             }
 
@@ -192,16 +211,17 @@ fn count_permutations(input: State) -> i64 {
             sub_state.springs = sub_state.springs.split_off(split_point);
 
             // continue onto the next group
-            count += count_permutations(sub_state);
+            count += count_permutations(sub_state, cache);
         }
     }
 
+    cache.insert(input, count);
     return count;
 }
 
 #[test]
 fn state_parse() {
-    let state = State::from_string("##..?? 1,2,30");
+    let state = State::from_string("##..?? 1,2,30", 1);
     assert_eq!(state.groups.len(), 3);
     assert_eq!(state.groups[0], 1);
     assert_eq!(state.groups[1], 2);
@@ -229,7 +249,7 @@ fn can_be_working_can_be_broken() {
 
 #[test]
 fn fit_spring() {
-    let state = State::from_string("??? 1");
+    let state = State::from_string("??? 1", 1);
 
     // length of 1 should have three options
     assert_eq!(state.fit_spring(0, 1), true);
@@ -251,7 +271,7 @@ fn fit_spring() {
     assert_eq!(state.fit_spring(1, 4), false);
     assert_eq!(state.fit_spring(0, 5), false);
 
-    let state = State::from_string("?#? 1");
+    let state = State::from_string("?#? 1", 1);
 
     // length of 1 has only 1 options
     assert_eq!(state.fit_spring(0, 1), false);
@@ -267,7 +287,7 @@ fn fit_spring() {
     assert_eq!(state.fit_spring(0, 3), true);
     assert_eq!(state.fit_spring(1, 3), false);
 
-    let state = State::from_string("?#?#? 1");
+    let state = State::from_string("?#?#? 1", 1);
 
     // length of one
     assert_eq!(state.fit_spring(0, 1), false);
@@ -285,55 +305,107 @@ fn fit_spring() {
 
 #[test]
 fn permutations() {
-    assert_eq!(count_permutations(State::from_string("??? 1")), 3);
-    assert_eq!(count_permutations(State::from_string("??? 2")), 2);
-    assert_eq!(count_permutations(State::from_string("??? 3")), 1);
-    assert_eq!(count_permutations(State::from_string("??? 4")), 0);
-
-    assert_eq!(count_permutations(State::from_string("?#?? 1")), 1);
+    let mut cache: HashMap<State, i64> = HashMap::new();
 
     assert_eq!(
-        count_permutations(State::from_string("#....######..#####. 1,6,5")),
+        count_permutations(State::from_string("??? 1", 1), &mut cache),
+        3
+    );
+    assert_eq!(
+        count_permutations(State::from_string("??? 2", 1), &mut cache),
+        2
+    );
+    assert_eq!(
+        count_permutations(State::from_string("??? 3", 1), &mut cache),
         1
     );
-    assert_eq!(count_permutations(State::from_string("#.#?. 1,1")), 1);
-    assert_eq!(count_permutations(State::from_string("??? 1,1")), 1);
-    assert_eq!(count_permutations(State::from_string("??? 1,1,1")), 0);
-
-    assert_eq!(count_permutations(State::from_string("???.### 1,1,3")), 1);
+    assert_eq!(
+        count_permutations(State::from_string("??? 4", 1), &mut cache),
+        0
+    );
 
     assert_eq!(
-        count_permutations(State::from_string(".??..??...?##. 1,1,3")),
+        count_permutations(State::from_string("?#?? 1", 1), &mut cache),
+        1
+    );
+
+    assert_eq!(
+        count_permutations(
+            State::from_string("#....######..#####. 1,6,5", 1),
+            &mut cache
+        ),
+        1
+    );
+    assert_eq!(
+        count_permutations(State::from_string("#.#?. 1,1", 1), &mut cache),
+        1
+    );
+    assert_eq!(
+        count_permutations(State::from_string("??? 1,1", 1), &mut cache),
+        1
+    );
+    assert_eq!(
+        count_permutations(State::from_string("??? 1,1,1", 1), &mut cache),
+        0
+    );
+
+    assert_eq!(
+        count_permutations(State::from_string("???.### 1,1,3", 1), &mut cache),
+        1
+    );
+
+    assert_eq!(
+        count_permutations(State::from_string(".??..??...?##. 1,1,3", 1), &mut cache),
         4
     );
     assert_eq!(
-        count_permutations(State::from_string("?#?#?#?#?#?#?#? 1,3,1,6")),
+        count_permutations(State::from_string("?#?#?#?#?#?#?#? 1,3,1,6", 1), &mut cache),
         1
     );
     assert_eq!(
-        count_permutations(State::from_string("????.#...#... 4,1,1")),
+        count_permutations(State::from_string("????.#...#... 4,1,1", 1), &mut cache),
         1
     );
     assert_eq!(
-        count_permutations(State::from_string("????.######..#####. 1,6,5")),
+        count_permutations(
+            State::from_string("????.######..#####. 1,6,5", 1),
+            &mut cache
+        ),
         4
     );
     assert_eq!(
-        count_permutations(State::from_string("?###???????? 3,2,1")),
+        count_permutations(State::from_string("?###???????? 3,2,1", 1), &mut cache),
         10
     );
     assert_eq!(
-        count_permutations(State::from_string("?#.??????#??#?#?#?#? 1,1,15")),
+        count_permutations(
+            State::from_string("?#.??????#??#?#?#?#? 1,1,15", 1),
+            &mut cache
+        ),
         1
     );
 
     assert_eq!(
-        count_permutations(State::from_string(".##.?#??.#.?# 2,1,1,1")),
+        count_permutations(State::from_string(".##.?#??.#.?# 2,1,1,1", 1), &mut cache),
         1
     );
 }
 
 #[test]
 fn sample() {
-    assert_eq!(part_one("resources/day_12/sample.txt"), 31);
+    assert_eq!(sum_permutations("resources/day_12/sample.txt", 1), 31);
+}
+
+#[test]
+fn unfolding() {
+    let mut cache: HashMap<State, i64> = HashMap::new();
+
+    let state = State::from_string("???.### 1,1,3", 5);
+    assert_eq!(count_permutations(state, &mut cache), 1);
+
+    let state = State::from_string("????.#...#... 4,1,1", 5);
+    assert_eq!(count_permutations(state, &mut cache), 16);
+
+    let state = State::from_string(".??..??...?##. 1,1,3", 5);
+    assert_eq!(count_permutations(state, &mut cache), 16384);
 }
