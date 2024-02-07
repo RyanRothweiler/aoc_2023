@@ -2,6 +2,7 @@
 
 use crate::perma::v2::V2;
 
+#[derive(Hash, Eq, PartialEq, Clone)]
 pub struct TwoD<T> {
     cells: Vec<T>,
     width: usize,
