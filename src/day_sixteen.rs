@@ -7,15 +7,64 @@
     unused_labels
 )]
 
-use std::io::{stdin, stdout, Write};
-
 use crate::perma::twod::TwoD;
 use crate::perma::v2::V2;
 
 pub fn run() {
     let contents = std::fs::read_to_string("resources/inputs/day_16.txt").unwrap();
+    part_two(&contents);
+}
+
+fn part_two(contents: &str) {
     let mut map = build_map(&contents);
-    let v = light_map(&mut map);
+
+    let mut max: i64 = 0;
+
+    let mut starts: Vec<Ray> = vec![];
+    for x in 0..map.width() {
+        starts.push(Ray {
+            pos: V2::new(x as i64, -1),
+            dir: V2::new(0, 1),
+        });
+
+        starts.push(Ray {
+            pos: V2::new(x as i64, map.height() as i64),
+            dir: V2::new(0, -1),
+        });
+    }
+    for y in 0..map.height() {
+        starts.push(Ray {
+            pos: V2::new(-1, y as i64),
+            dir: V2::new(1, 0),
+        });
+
+        starts.push(Ray {
+            pos: V2::new(map.width() as i64, y as i64),
+            dir: V2::new(-1, 0),
+        });
+    }
+
+    for r in starts {
+        map = build_map(&contents);
+
+        let v = light_map(r, &mut map);
+        if v > max {
+            max = v;
+        }
+    }
+    println!("{max}");
+}
+
+fn part_one(contents: &str) {
+    let mut map = build_map(&contents);
+
+    let v = light_map(
+        Ray {
+            pos: V2::new(-1, 0),
+            dir: V2::new(1, 0),
+        },
+        &mut map,
+    );
     println!("{v}");
 }
 
@@ -197,14 +246,9 @@ fn direct_ray(mut ray: Ray, new_cell: &mut Cell) -> Vec<Ray> {
     };
 }
 
-fn light_map(map: &mut TwoD<Cell>) -> i64 {
+fn light_map(start: Ray, map: &mut TwoD<Cell>) -> i64 {
     let mut lights: Vec<Ray> = vec![];
-
-    // start with light on top left. Start at -1 so that we can handle mirrors at 0.0
-    lights.push(Ray {
-        pos: V2::new(-1, 0),
-        dir: V2::new(1, 0),
-    });
+    lights.push(start);
 
     let mut count: i64 = 0;
     loop {
@@ -227,29 +271,6 @@ fn light_map(map: &mut TwoD<Cell>) -> i64 {
                 continue;
             }
         }
-
-        /*
-        // for debugging
-        for y in 0..map.height() {
-            for x in 0..map.width() {
-                let c = map.get(x, y).unwrap();
-                if c.visited_count {
-                    print!("#");
-                } else {
-                    print!(".");
-                }
-                //print!("{c:?}");
-            }
-            println!("");
-        }
-        */
-
-        /*
-        let mut s = String::new();
-        stdin()
-            .read_line(&mut s)
-            .expect("Did not enter a correct string");
-        */
     }
 
     for x in 0..map.width() {
@@ -268,7 +289,11 @@ fn light_map(map: &mut TwoD<Cell>) -> i64 {
 fn sample() {
     let contents = std::fs::read_to_string("resources/day_16/day_16_sample.txt").unwrap();
     let mut map = build_map(&contents);
-    let v = light_map(&mut map);
+    let start = Ray {
+        pos: V2::new(-1, 0),
+        dir: V2::new(1, 0),
+    };
+    let v = light_map(start, &mut map);
     assert_eq!(v, 46);
 }
 
