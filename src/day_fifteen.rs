@@ -7,8 +7,9 @@
     unused_labels
 )]
 
-use std::collections::HashMap;
 const MIRROR_BOX_COUNT: i64 = 256;
+
+use std::collections::HashMap;
 
 pub fn run() {
     let contents = std::fs::read_to_string("resources/inputs/day_15.txt").unwrap();

@@ -18,6 +18,14 @@ impl V2 {
         let y = (first.y - second.y).abs();
         return x + y;
     }
+
+    pub fn x_as_usize(self) -> usize {
+        return usize::try_from(self.x).unwrap();
+    }
+
+    pub fn y_as_usize(self) -> usize {
+        return usize::try_from(self.y).unwrap();
+    }
 }
 
 impl ops::Add<V2> for V2 {

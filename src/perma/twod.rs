@@ -28,6 +28,10 @@ impl<T: std::clone::Clone> TwoD<T> {
 
     // TODO change this to get_mut and add a non mut get option
     pub fn get(&mut self, x: usize, y: usize) -> Option<&mut T> {
+        if x >= self.width || y >= self.height {
+            return None;
+        }
+
         let i = (y * self.width) + x;
         match self.cells.get_mut(i) {
             Some(t) => return Some(t),
@@ -40,6 +44,10 @@ impl<T: std::clone::Clone> TwoD<T> {
     }
 
     pub fn get_v2(&mut self, pos: V2) -> Option<&mut T> {
+        if pos.x < 0 || pos.y < 0 {
+            return None;
+        }
+
         return self.get(
             usize::try_from(pos.x).unwrap(),
             usize::try_from(pos.y).unwrap(),
