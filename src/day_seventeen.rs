@@ -20,7 +20,7 @@ use crate::perma::twod::TwoD;
 use crate::perma::v2::V2;
 
 pub fn run() {
-    let v = part_one("resources/inputs/day_17.txt");
+    let v = min_cost("resources/inputs/day_17.txt", 10, 4);
     println!("{v}");
 }
 
@@ -32,7 +32,7 @@ struct Arrival {
 }
 
 // returns cost of min path (heat loss)
-pub fn part_one(file_dir: &str) -> i64 {
+pub fn min_cost(file_dir: &str, max_forward: i64, min_forward: i64) -> i64 {
     let contents = std::fs::read_to_string(file_dir).unwrap();
     let mut map = build_map(&contents);
 
@@ -53,11 +53,12 @@ pub fn part_one(file_dir: &str) -> i64 {
     loop {
         let next_best = frontier.pop().unwrap();
 
-        if next_best.pos == goal {
+        // cannot end the path lower than the min forward
+        if next_best.pos == goal && next_best.count_forward >= min_forward {
             return next_best.cost;
         }
 
-        let adjacents = valid_adjacents(next_best, &mut map);
+        let adjacents = valid_adjacents(next_best, &mut map, max_forward, min_forward);
         for s in adjacents {
             let arr = Arrival {
                 pos: s.pos,
@@ -79,7 +80,7 @@ pub fn part_one(file_dir: &str) -> i64 {
     }
 }
 
-#[derive(Clone, Copy, PartialEq, Eq)]
+#[derive(Clone, Copy, PartialEq, Eq, Debug)]
 struct State {
     cost: i64,
     pos: V2,
@@ -131,7 +132,12 @@ impl Cell {
 }
 
 // Returns only the possible adjacents given the crucible rules
-fn valid_adjacents(state: State, map: &mut TwoD<Cell>) -> Vec<State> {
+fn valid_adjacents(
+    state: State,
+    map: &mut TwoD<Cell>,
+    max_forward: i64,
+    min_forward: i64,
+) -> Vec<State> {
     let mut ret: Vec<State> = vec![];
 
     let mut dirs: Vec<V2> = vec![];
@@ -141,8 +147,13 @@ fn valid_adjacents(state: State, map: &mut TwoD<Cell>) -> Vec<State> {
     dirs.push(V2::new(0, -1));
 
     for d in dirs {
-        // can't move in the same direction more than 3 times
-        if d == state.forward && state.count_forward >= 3 {
+        // Max forward movements
+        if d == state.forward && state.count_forward >= max_forward {
+            continue;
+        }
+
+        // Min forward movements. Cannot turn until we have this amount forward
+        if d != state.forward && state.count_forward < min_forward {
             continue;
         }
 
@@ -194,9 +205,15 @@ fn build_map(file_data: &str) -> TwoD<Cell> {
 }
 
 #[test]
-fn sample() {
-    let v = part_one("resources/day_17/day_17_sample.txt");
+fn sample_part_one() {
+    let v = min_cost("resources/day_17/day_17_sample.txt", 3, 0);
     assert_eq!(v, 102);
+}
+
+#[test]
+fn sample_part_two() {
+    let v = min_cost("resources/day_17/day_17_sample.txt", 10, 4);
+    assert_eq!(v, 94);
 }
 
 #[test]
@@ -211,7 +228,7 @@ fn adjacents() {
         count_forward: 1,
     };
 
-    let adj = valid_adjacents(state, &mut map);
+    let adj = valid_adjacents(state, &mut map, 3, 0);
 
     assert_eq!(adj.len(), 3);
 
@@ -230,7 +247,7 @@ fn adjacents() {
     assert_eq!(adj[2].count_forward, 1);
     assert_eq!(adj[2].cost, 1);
 
-    let adj = valid_adjacents(adj[1], &mut map);
+    let adj = valid_adjacents(adj[1], &mut map, 3, 0);
 
     assert_eq!(adj.len(), 3);
 
