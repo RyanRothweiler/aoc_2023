@@ -1,3 +1,8 @@
+/* Improvements
+ * - Map is being rebuilt every run. Can just reset the data.
+ * - SHOULD be able to do the counting in one pass, this is doing two passes.
+ */
+
 #![allow(
     unused_variables,
     dead_code,
@@ -45,6 +50,7 @@ fn part_two(contents: &str) {
     }
 
     for r in starts {
+        // reset the map. This is very inefficient as this rebuilds the entire map from the string.
         map = build_map(&contents);
 
         let v = light_map(r, &mut map);

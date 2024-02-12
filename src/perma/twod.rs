@@ -33,10 +33,7 @@ impl<T: std::clone::Clone> TwoD<T> {
         }
 
         let i = (y * self.width) + x;
-        match self.cells.get_mut(i) {
-            Some(t) => return Some(t),
-            None => return None,
-        }
+        return self.cells.get_mut(i);
     }
 
     pub fn get_i(&mut self, x: i64, y: i64) -> Option<&mut T> {

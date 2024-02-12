@@ -2,7 +2,7 @@
 
 use std::ops;
 
-#[derive(Clone, Copy, Eq, PartialEq, Debug)]
+#[derive(Clone, Copy, Eq, PartialEq, Debug, Hash)]
 pub struct V2 {
     pub x: i64,
     pub y: i64,
