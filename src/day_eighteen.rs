@@ -1,0 +1,136 @@
+#![allow(
+    unused_variables,
+    dead_code,
+    unused_mut,
+    unused_imports,
+    unused_assignments,
+    unused_labels
+)]
+
+use crate::perma::line::Line;
+use crate::perma::math::*;
+use crate::perma::v2::V2;
+
+pub fn run() {
+    let v = part_one("resources/inputs/day_18.txt");
+    println!("{v}");
+}
+
+fn part_one(file_dir: &str) -> f64 {
+    let map = build_points(file_dir);
+    let p = map.perimiter * 0.5;
+    let a = shoelace_area(&map.points) + p + 1.0;
+    return a;
+}
+
+struct Map {
+    points: Vec<V2>,
+    perimiter: f64,
+}
+
+fn build_points(file_dir: &str) -> Map {
+    let mut ret = Map {
+        points: vec![],
+        perimiter: 0.0,
+    };
+
+    let contents = std::fs::read_to_string(file_dir).unwrap();
+    let mut lines = contents.lines();
+
+    let mut bot_pos = V2::new(0, 0);
+    ret.points.push(bot_pos);
+
+    for step_string in lines {
+        let miner = MineStep::from_string(step_string).unwrap();
+        bot_pos = miner.step(bot_pos);
+
+        ret.points.push(bot_pos);
+        ret.perimiter += miner.len as f64;
+    }
+
+    return ret;
+}
+
+#[derive(Eq, PartialEq, Debug)]
+struct MineStep {
+    dir: V2,
+    len: i64,
+    color_hex: String,
+}
+
+impl MineStep {
+    fn new(dir: V2, len: i64) {}
+
+    // Input format is
+    // U 3 (#a77fa3)
+    fn from_string(input: &str) -> Result<MineStep, &str> {
+        let parts: Vec<&str> = input.split(' ').collect();
+        if parts.len() != 3 {
+            return Err("Invalid Format");
+        }
+
+        let mut ms = MineStep {
+            dir: V2::new(0, 0),
+            len: 0,
+            color_hex: "".to_string(),
+        };
+
+        // parse dir
+        let dir_chars: Vec<char> = parts[0].chars().collect();
+        if dir_chars.len() < 1 {
+            return Err("Invalid Format");
+        }
+        match dir_chars[0] {
+            'R' => ms.dir = V2::new(1, 0),
+            'L' => ms.dir = V2::new(-1, 0),
+            'D' => ms.dir = V2::new(0, 1),
+            'U' => ms.dir = V2::new(0, -1),
+            _ => return Err("Error parsing direction"),
+        }
+
+        // parse length
+        match parts[1].parse() {
+            Ok(i) => ms.len = i,
+            Err(t) => return Err("Error parsing length"),
+        }
+
+        // parse color
+        let mut col = parts[2].to_string();
+        //'('
+        col.remove(0);
+        //'#'
+        col.remove(0);
+        //')'
+        col.remove(col.len() - 1);
+        ms.color_hex = col;
+
+        return Ok(ms);
+    }
+
+    fn step(&self, curr: V2) -> V2 {
+        return curr + (self.dir * self.len);
+    }
+}
+
+#[test]
+fn parse_step() {
+    let mut ms = MineStep::from_string("R 1 (#70c710)").unwrap();
+    assert_eq!(ms.dir, V2::new(1, 0));
+    assert_eq!(ms.len, 1);
+    assert_eq!(ms.color_hex, "70c710");
+
+    let mut ms = MineStep::from_string("U 10 (#70c710)").unwrap();
+    assert_eq!(ms.dir, V2::new(0, -1));
+    assert_eq!(ms.len, 10);
+    assert_eq!(ms.color_hex, "70c710");
+
+    let mut ms = MineStep::from_string("D 1110 (#70c710)").unwrap();
+    assert_eq!(ms.dir, V2::new(0, 1));
+    assert_eq!(ms.len, 1110);
+    assert_eq!(ms.color_hex, "70c710");
+
+    let mut ms = MineStep::from_string("L 5 (#70c710)").unwrap();
+    assert_eq!(ms.dir, V2::new(-1, 0));
+    assert_eq!(ms.len, 5);
+    assert_eq!(ms.color_hex, "70c710");
+}

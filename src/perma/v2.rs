@@ -39,6 +39,17 @@ impl ops::Add<V2> for V2 {
     }
 }
 
+impl ops::Mul<i64> for V2 {
+    type Output = V2;
+
+    fn mul(self, rhs: i64) -> V2 {
+        V2 {
+            x: self.x * rhs,
+            y: self.y * rhs,
+        }
+    }
+}
+
 #[test]
 fn manhattan_distnace() {
     assert_eq!(V2::manhattan_dist(&V2::new(0, 0), &V2::new(5, 5)), 10);
