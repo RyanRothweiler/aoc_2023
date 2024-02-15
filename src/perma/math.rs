@@ -35,39 +35,3 @@ fn shoelace_area_one() {
 
     assert_eq!(shoelace_area(&points), 55);
 }
-
-/*
-#[test]
-fn shoelace_area_two() {
-    let mut points: Vec<V2> = vec![];
-    points.push(V2::new(0, 0));
-    points.push(V2::new(6, 0));
-    points.push(V2::new(6, 5));
-    points.push(V2::new(4, 5));
-    points.push(V2::new(4, 7));
-    points.push(V2::new(6, 7));
-    points.push(V2::new(6, 9));
-    points.push(V2::new(1, 9));
-    points.push(V2::new(1, 7));
-    points.push(V2::new(0, 7));
-    points.push(V2::new(0, 5));
-    points.push(V2::new(2, 5));
-    points.push(V2::new(2, 2));
-    points.push(V2::new(0, 2));
-
-    assert_eq!(shoelace_area(&points), 42.0);
-}
-*/
-
-/*
-#######
-#.....#
-###...#
-..#...#
-..#...#
-###.###
-#...#..
-##..###
-.#....#
-.######
-*/
