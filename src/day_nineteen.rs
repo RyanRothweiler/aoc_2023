@@ -9,9 +9,10 @@
 
 use std::collections::HashMap;
 use std::ops::Index;
+use std::ops::IndexMut;
 
 pub fn run() {
-    let v = part_one("resources/inputs/day_19.txt");
+    let v = part_two("resources/inputs/day_19.txt");
     println!("{v}");
 }
 
@@ -29,6 +30,127 @@ fn part_one(file_dir: &str) -> i64 {
     }
 
     return sum;
+}
+
+fn part_two(file_dir: &str) -> i64 {
+    let mut file_data = parse_file(file_dir);
+
+    let pi = PartInstanceRange {
+        x: Range { min: 1, max: 4000 },
+        m: Range { min: 1, max: 4000 },
+        a: Range { min: 1, max: 4000 },
+        s: Range { min: 1, max: 4000 },
+    };
+
+    let v = filter_run_range(pi, "in".to_string(), &mut file_data.groups);
+    return v;
+}
+
+// both are inclusive
+#[derive(Clone)]
+struct Range {
+    min: i64,
+    max: i64,
+}
+
+impl Range {
+    fn validate(&self) {
+        if self.min > self.max {
+            panic!("Range is invalid. Something is wrong.");
+        }
+    }
+
+    fn options_count(&self) -> i64 {
+        return (self.max - self.min) + 1;
+    }
+}
+
+#[derive(Clone)]
+struct PartInstanceRange {
+    x: Range,
+    m: Range,
+    a: Range,
+    s: Range,
+}
+
+impl PartInstanceRange {
+    fn validate(&self) {
+        self.x.validate();
+        self.m.validate();
+        self.a.validate();
+        self.s.validate();
+    }
+}
+
+impl PartInstanceRange {
+    fn count_combinations(&self) -> i64 {
+        return self.x.options_count()
+            * self.m.options_count()
+            * self.a.options_count()
+            * self.s.options_count();
+    }
+
+    // return (passed range, didn't pass range)
+    fn split_passed(&self, filt: &PartFilterData) -> (PartInstanceRange, PartInstanceRange) {
+        let mut passed = self.clone();
+        let mut failed = self.clone();
+
+        let mut passed_range = &mut passed[filt.category];
+        let mut failed_range = &mut failed[filt.category];
+
+        match filt.comp {
+            Comparison::Less => {
+                if passed_range.max > filt.val {
+                    // -1 because the comparisons are < not <= so don't include the filt.val
+                    // itself. That would be rejected.
+                    passed_range.max = filt.val - 1;
+                }
+                if failed_range.min < filt.val {
+                    failed_range.min = filt.val;
+                }
+            }
+            Comparison::Greater => {
+                if passed_range.min < filt.val {
+                    // +1 because the comparisons are < not <= so don't include the filt.val
+                    // itself. That would be rejected.
+                    passed_range.min = filt.val + 1;
+                }
+                if failed_range.max > filt.val {
+                    failed_range.max = filt.val;
+                }
+            }
+        }
+
+        // some sanity checking here
+        passed.validate();
+        failed.validate();
+
+        return (passed, failed);
+    }
+}
+
+impl Index<PartCategory> for PartInstanceRange {
+    type Output = Range;
+
+    fn index(&self, input: PartCategory) -> &Self::Output {
+        match input {
+            PartCategory::X => &self.x,
+            PartCategory::M => &self.m,
+            PartCategory::A => &self.a,
+            PartCategory::S => &self.s,
+        }
+    }
+}
+
+impl IndexMut<PartCategory> for PartInstanceRange {
+    fn index_mut(&mut self, input: PartCategory) -> &mut Self::Output {
+        match input {
+            PartCategory::X => &mut self.x,
+            PartCategory::M => &mut self.m,
+            PartCategory::A => &mut self.a,
+            PartCategory::S => &mut self.s,
+        }
+    }
 }
 
 struct PartInstance {
@@ -277,18 +399,6 @@ fn parse_file(file_dir: &str) -> FileData {
     return ret;
 }
 
-fn build_filter_groups(file_dir: &str) -> HashMap<String, FilterGroup> {
-    let mut ret: HashMap<String, FilterGroup> = HashMap::new();
-
-    let contents = std::fs::read_to_string(file_dir).unwrap();
-    for l in contents.lines() {
-        let group = FilterGroup::from_string(l).unwrap();
-        ret.insert(group.id.clone(), group);
-    }
-
-    return ret;
-}
-
 #[derive(Debug, Eq, PartialEq, Hash, Clone)]
 enum FilterResult {
     Accept,
@@ -326,6 +436,57 @@ fn filter_run(
     }
 
     panic!("All filters should always end in either accept or reject. We should never iterate through the entire list without returning.");
+}
+
+// for part_two
+// returns the count of all accepted parts
+fn filter_run_range(
+    part: PartInstanceRange,
+    filter_id: String,
+    all_filters: &HashMap<String, FilterGroup>,
+) -> i64 {
+    let filter: &FilterGroup = all_filters.get(&filter_id).unwrap();
+
+    let mut count_accepted = 0;
+    let mut current_range: PartInstanceRange = part.clone();
+
+    for curr_filt in &filter.part_filters {
+        match curr_filt {
+            PartFilter::Reject => {
+                // Do nothing.
+                // Don't add this part to the count.
+            }
+            PartFilter::Accept => {
+                count_accepted += current_range.count_combinations();
+            }
+            PartFilter::Goto(dest) => {
+                count_accepted +=
+                    filter_run_range(current_range.clone(), dest.clone(), all_filters);
+            }
+            PartFilter::Filter(filter_data) => {
+                let split = current_range.split_passed(filter_data);
+
+                // handle the passed ranges
+                match filter_data.dest.clone() {
+                    FilterResult::Accept => {
+                        count_accepted += split.0.count_combinations();
+                    }
+                    FilterResult::Reject => {
+                        // Do nothing.
+                        // Don't add this part to the count.
+                    }
+                    FilterResult::Goto(next_filter_id) => {
+                        count_accepted += filter_run_range(split.0, next_filter_id, all_filters);
+                    }
+                }
+
+                // continue onto the next filter in this group with the failed ranges
+                current_range = split.1.clone();
+            }
+        }
+    }
+
+    return count_accepted;
 }
 
 #[test]
@@ -409,6 +570,47 @@ fn parse_three() {
 }
 
 #[test]
+fn split_ranged() {
+    // less
+    let pi = PartInstanceRange {
+        x: Range { min: 1, max: 4000 },
+        m: Range { min: 1, max: 4000 },
+        a: Range { min: 1, max: 4000 },
+        s: Range { min: 1, max: 4000 },
+    };
+    let pf = PartFilterData {
+        category: PartCategory::X,
+        comp: Comparison::Less,
+        val: 2000,
+        dest: FilterResult::Reject,
+    };
+
+    let split = pi.split_passed(&pf);
+
+    assert_eq!(split.0.x.min, 1);
+    assert_eq!(split.0.x.max, 1999);
+
+    assert_eq!(split.1.x.min, 2000);
+    assert_eq!(split.1.x.max, 4000);
+
+    // greater
+    let pf = PartFilterData {
+        category: PartCategory::X,
+        comp: Comparison::Greater,
+        val: 10,
+        dest: FilterResult::Reject,
+    };
+
+    let split_again = split.0.split_passed(&pf);
+
+    assert_eq!(split_again.0.x.min, 11);
+    assert_eq!(split_again.0.x.max, 1999);
+
+    assert_eq!(split_again.1.x.min, 1);
+    assert_eq!(split_again.1.x.max, 10);
+}
+
+#[test]
 fn parse_part_instance() {
     let pi = PartInstance::from_string("{x=787,m=2655,a=1222,s=2876}");
     assert_eq!(pi.x, 787);
@@ -418,7 +620,7 @@ fn parse_part_instance() {
 }
 
 #[test]
-fn sample() {
+fn sample_parsing() {
     let mut file_data = parse_file("resources/day_19/day_19_sample.txt");
 
     assert_eq!(file_data.groups.len(), 11);
@@ -451,7 +653,25 @@ fn sample() {
 }
 
 #[test]
-fn part_one_test() {
+fn options_count() {
+    let pi = PartInstanceRange {
+        x: Range { min: 1, max: 10 },
+        m: Range { min: 1, max: 10 },
+        a: Range { min: 1, max: 10 },
+        s: Range { min: 1, max: 10 },
+    };
+
+    assert_eq!(pi.count_combinations(), 10_000);
+}
+
+#[test]
+fn part_one_sample() {
     let v = part_one("resources/day_19/day_19_sample.txt");
     assert_eq!(v, 19114);
+}
+
+#[test]
+fn part_two_sample() {
+    let v = part_two("resources/day_19/day_19_sample.txt");
+    assert_eq!(v, 167409079868000);
 }
