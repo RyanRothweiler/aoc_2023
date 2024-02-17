@@ -19,8 +19,9 @@ mod day_sixteen;
 mod day_seventeen;
 mod day_eighteen;
 mod day_nineteen;
+mod day_twenty;
 
 fn main() {
-    day_nineteen::run();
+    day_twenty::run();
 }
 
