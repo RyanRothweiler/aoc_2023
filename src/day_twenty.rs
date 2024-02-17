@@ -98,7 +98,6 @@ fn step_node(node_id: &str, all_nodes: &mut HashMap<String, Node>) {
 
         NodeKind::Conjunction(state) => {
             // update memory
-
             if !state.memory.contains_key(&pulse.source_id) {
                 state
                     .memory
@@ -133,7 +132,7 @@ fn step_node(node_id: &str, all_nodes: &mut HashMap<String, Node>) {
         }
 
         NodeKind::Broadcast => {
-            todo!();
+            queue_pulse(pulse, node.children.clone(), all_nodes);
         }
     }
 }
@@ -252,4 +251,52 @@ fn node_conjunction() {
     assert_eq!(bn.pulses[2].kind, PulseKind::Low);
     assert_eq!(bn.pulses[3].kind, PulseKind::High);
     assert_eq!(bn.pulses[4].kind, PulseKind::High);
+}
+
+#[test]
+fn node_broadcast() {
+    let mut nodes: HashMap<String, Node> = HashMap::new();
+
+    let mut node_a = Node {
+        children: vec!["b".to_string(), "c".to_string()],
+        kind: NodeKind::Broadcast,
+        pulses: VecDeque::new(),
+    };
+
+    node_a
+        .pulses
+        .push_back(Pulse::new(PulseKind::Low, "first".to_string()));
+    node_a
+        .pulses
+        .push_back(Pulse::new(PulseKind::High, "second".to_string()));
+    nodes.insert("tst".to_string(), node_a);
+
+    let mut node_b = Node {
+        children: vec![],
+        kind: NodeKind::FlipFlop(false),
+        pulses: VecDeque::new(),
+    };
+    nodes.insert("b".to_string(), node_b);
+
+    let mut node_c = Node {
+        children: vec![],
+        kind: NodeKind::FlipFlop(false),
+        pulses: VecDeque::new(),
+    };
+    nodes.insert("c".to_string(), node_c);
+
+    // pulses to process
+    step_node("tst", &mut nodes);
+    step_node("tst", &mut nodes);
+
+    // validate
+    let bn = nodes.get("b").unwrap();
+    assert_eq!(bn.pulses.len(), 2);
+    assert_eq!(bn.pulses[0].kind, PulseKind::Low);
+    assert_eq!(bn.pulses[1].kind, PulseKind::High);
+
+    let cn = nodes.get("c").unwrap();
+    assert_eq!(cn.pulses.len(), 2);
+    assert_eq!(cn.pulses[0].kind, PulseKind::Low);
+    assert_eq!(cn.pulses[1].kind, PulseKind::High);
 }
