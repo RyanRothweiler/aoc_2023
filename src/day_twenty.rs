@@ -30,6 +30,7 @@ impl Pulse {
     }
 }
 
+#[derive(Eq, PartialEq, Clone, Debug)]
 enum NodeKind {
     FlipFlop(bool),
     Conjunction(ConjunctionState),
@@ -41,6 +42,7 @@ struct NodeState {
     children: Vec<String>,
 }
 
+#[derive(Eq, PartialEq, Clone, Debug)]
 struct ConjunctionState {
     memory: HashMap<String, PulseKind>,
 }
@@ -134,6 +136,123 @@ fn step_node(node_id: &str, all_nodes: &mut HashMap<String, Node>) {
         NodeKind::Broadcast => {
             queue_pulse(pulse, node.children.clone(), all_nodes);
         }
+    }
+}
+
+fn parse_map(file_dir: &str) -> HashMap<String, Node> {
+    let contents = std::fs::read_to_string(file_dir).unwrap();
+
+    let mut nodes: HashMap<String, Node> = HashMap::new();
+
+    // create all the nodes
+    for line in contents.lines() {
+        // 0 is the node type
+        // 1 is the arrow
+        // 2..n is the node children
+        let parts: Vec<&str> = line.split(' ').collect();
+
+        // create node
+        let mut node = Node {
+            children: vec![],
+            kind: NodeKind::Broadcast,
+            pulses: VecDeque::new(),
+        };
+        let mut node_id: String = String::new();
+
+        let first_chars: Vec<char> = parts[0].trim().chars().collect();
+        match first_chars[0] {
+            'b' => {
+                node.kind = NodeKind::Broadcast;
+                node_id = "broadcaster".to_string();
+            }
+            '%' => {
+                node.kind = NodeKind::FlipFlop(false);
+                node_id = parts[0].trim().to_string();
+                node_id.remove(0);
+            }
+            '&' => {
+                node.kind = NodeKind::Conjunction(ConjunctionState {
+                    memory: HashMap::new(),
+                });
+                node_id = parts[0].trim().to_string();
+                node_id.remove(0);
+            }
+            _ => panic!("Unknown node type"),
+        }
+
+        // setup node children
+        for i in 2..parts.len() {
+            let mut id = parts[i].trim().to_string();
+            id = id.replace(",", "");
+            node.children.push(id);
+        }
+
+        nodes.insert(node_id, node);
+    }
+
+    /*
+    // do a second pass to init the conjunctions memory
+    for (key, value) in &nodes {
+        for c in &value.children {
+            let child = nodes.get_mut(c).unwrap();
+            //child.kind = NodeKind::Broadcast;
+        }
+
+        /*
+        match &mut value.kind {
+            NodeKind::Conjunction(state) => {
+                for c in &value.children {
+                    state.memory.insert(c.to_string(), PulseKind::Low);
+                }
+            }
+            _ => {
+                // do nothing for other types
+            }
+        }
+        */
+    }
+    */
+
+    return nodes;
+}
+
+#[test]
+fn parsing() {
+    let all_nodes = parse_map("resources/day_20/day_20_sample_one.txt");
+
+    assert_eq!(all_nodes.len(), 5);
+
+    let node = all_nodes.get("broadcaster").unwrap();
+    assert_eq!(node.kind, NodeKind::Broadcast);
+    assert_eq!(node.children.len(), 3);
+    assert_eq!(node.children[0], "a".to_string());
+    assert_eq!(node.children[1], "b".to_string());
+    assert_eq!(node.children[2], "c".to_string());
+
+    let node = all_nodes.get("a").unwrap();
+    assert_eq!(node.kind, NodeKind::FlipFlop(false));
+    assert_eq!(node.children.len(), 1);
+    assert_eq!(node.children[0], "b".to_string());
+
+    let node = all_nodes.get("b").unwrap();
+    assert_eq!(node.kind, NodeKind::FlipFlop(false));
+    assert_eq!(node.children.len(), 1);
+    assert_eq!(node.children[0], "c".to_string());
+
+    let node = all_nodes.get("c").unwrap();
+    assert_eq!(node.kind, NodeKind::FlipFlop(false));
+    assert_eq!(node.children.len(), 1);
+    assert_eq!(node.children[0], "inv".to_string());
+
+    let node = all_nodes.get("inv").unwrap();
+    assert_eq!(node.children.len(), 1);
+    assert_eq!(node.children[0], "a".to_string());
+    match &node.kind {
+        NodeKind::Conjunction(state) => {
+            assert_eq!(state.memory.len(), 1);
+            assert_eq!(state.memory.contains_key("c"), true);
+        }
+        _ => panic!("Wrong node type."),
     }
 }
 
