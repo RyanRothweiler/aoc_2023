@@ -7,6 +7,7 @@
     unused_labels
 )]
 
+use core::cell::RefCell;
 use std::collections::HashMap;
 use std::collections::VecDeque;
 
@@ -139,10 +140,10 @@ fn step_node(node_id: &str, all_nodes: &mut HashMap<String, Node>) {
     }
 }
 
-fn parse_map(file_dir: &str) -> HashMap<String, Node> {
+fn parse_map(file_dir: &str) -> HashMap<String, RefCell<Node>> {
     let contents = std::fs::read_to_string(file_dir).unwrap();
 
-    let mut nodes: HashMap<String, Node> = HashMap::new();
+    let mut nodes: HashMap<String, RefCell<Node>> = HashMap::new();
 
     // create all the nodes
     for line in contents.lines() {
@@ -187,31 +188,26 @@ fn parse_map(file_dir: &str) -> HashMap<String, Node> {
             node.children.push(id);
         }
 
-        nodes.insert(node_id, node);
+        nodes.insert(node_id, RefCell::new(node));
     }
 
-    /*
-    // do a second pass to init the conjunctions memory
+    // Do a second pass to init the conjunctions memory
+    // This will mut borrow twice if a node is its own parent.
+    // So don't do that.
     for (key, value) in &nodes {
-        for c in &value.children {
-            let child = nodes.get_mut(c).unwrap();
-            //child.kind = NodeKind::Broadcast;
-        }
-
-        /*
-        match &mut value.kind {
-            NodeKind::Conjunction(state) => {
-                for c in &value.children {
-                    state.memory.insert(c.to_string(), PulseKind::Low);
+        let node = value.borrow();
+        for child_id in &node.children {
+            let mut child = nodes.get(child_id).unwrap().borrow_mut();
+            match &mut child.kind {
+                NodeKind::Conjunction(state) => {
+                    state.memory.insert(key.to_string(), PulseKind::Low);
+                }
+                _ => {
+                    // do nothing for other types
                 }
             }
-            _ => {
-                // do nothing for other types
-            }
         }
-        */
     }
-    */
 
     return nodes;
 }
@@ -222,29 +218,29 @@ fn parsing() {
 
     assert_eq!(all_nodes.len(), 5);
 
-    let node = all_nodes.get("broadcaster").unwrap();
+    let node = all_nodes.get("broadcaster").unwrap().borrow();
     assert_eq!(node.kind, NodeKind::Broadcast);
     assert_eq!(node.children.len(), 3);
     assert_eq!(node.children[0], "a".to_string());
     assert_eq!(node.children[1], "b".to_string());
     assert_eq!(node.children[2], "c".to_string());
 
-    let node = all_nodes.get("a").unwrap();
+    let node = all_nodes.get("a").unwrap().borrow();
     assert_eq!(node.kind, NodeKind::FlipFlop(false));
     assert_eq!(node.children.len(), 1);
     assert_eq!(node.children[0], "b".to_string());
 
-    let node = all_nodes.get("b").unwrap();
+    let node = all_nodes.get("b").unwrap().borrow();
     assert_eq!(node.kind, NodeKind::FlipFlop(false));
     assert_eq!(node.children.len(), 1);
     assert_eq!(node.children[0], "c".to_string());
 
-    let node = all_nodes.get("c").unwrap();
+    let node = all_nodes.get("c").unwrap().borrow();
     assert_eq!(node.kind, NodeKind::FlipFlop(false));
     assert_eq!(node.children.len(), 1);
     assert_eq!(node.children[0], "inv".to_string());
 
-    let node = all_nodes.get("inv").unwrap();
+    let node = all_nodes.get("inv").unwrap().borrow();
     assert_eq!(node.children.len(), 1);
     assert_eq!(node.children[0], "a".to_string());
     match &node.kind {
