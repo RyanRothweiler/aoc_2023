@@ -13,6 +13,60 @@ use std::collections::VecDeque;
 
 pub fn run() {}
 
+fn part_one(file_dir: &str, press_count: i64) -> i64 {
+    let mut ret: i64 = 0;
+
+    let mut all_nodes = parse_map(file_dir);
+
+    let mut accum = Accumulator::new();
+    for i in 0..press_count {
+        press_button(&mut all_nodes, &mut accum);
+    }
+
+    return ret;
+}
+
+fn press_button(all_nodes: &mut HashMap<String, RefCell<Node>>, accum: &mut Accumulator) {
+    // send first pulse on broadcaster
+    {
+        let broadcaster = all_nodes.get("broadcaster").unwrap().borrow();
+
+        // this assumes there is no node with an empty id
+        queue_pulse(
+            Pulse::new(PulseKind::Low, "".to_string()),
+            broadcaster.children.clone(),
+            all_nodes,
+        );
+
+        // manually count this pulse
+        accum.low_count += 1;
+    }
+
+    // process all queues, until they're all empty
+    loop {
+        let mut did_process = false;
+
+        for key in all_nodes.keys() {
+            let mut step = false;
+
+            // block to unborrow the node after checking its pulse count
+            {
+                let node = all_nodes.get(key).unwrap().borrow();
+                step = node.pulses.len() != 0;
+            }
+
+            if step {
+                did_process = true;
+                step_node(key, all_nodes, accum);
+            }
+        }
+
+        if !did_process {
+            break;
+        }
+    }
+}
+
 #[derive(Eq, PartialEq, Copy, Clone, Debug)]
 enum PulseKind {
     High,
@@ -48,29 +102,48 @@ struct ConjunctionState {
     memory: HashMap<String, PulseKind>,
 }
 
-struct BroadcastState {}
-
 struct Node {
     children: Vec<String>,
     kind: NodeKind,
     pulses: VecDeque<Pulse>,
 }
 
-fn queue_pulse(pulse: Pulse, nodes: Vec<String>, all_nodes: &mut HashMap<String, Node>) {
+struct Accumulator {
+    low_count: i64,
+    high_count: i64,
+}
+
+impl Accumulator {
+    fn new() -> Accumulator {
+        Accumulator {
+            low_count: 0,
+            high_count: 0,
+        }
+    }
+}
+
+fn queue_pulse(pulse: Pulse, nodes: Vec<String>, all_nodes: &HashMap<String, RefCell<Node>>) {
     for id in nodes {
-        let mut node = all_nodes.get_mut(&id).unwrap();
+        let mut node = all_nodes.get(&id).unwrap().borrow_mut();
         node.pulses.push_back(pulse.clone());
     }
 }
 
-fn step_node(node_id: &str, all_nodes: &mut HashMap<String, Node>) {
-    let node = all_nodes.get_mut(node_id).unwrap();
+fn step_node(node_id: &str, all_nodes: &HashMap<String, RefCell<Node>>, accum: &mut Accumulator) {
+    let mut node = all_nodes.get(node_id).unwrap().borrow_mut();
 
     let pulse = match node.pulses.pop_front() {
         Some(v) => v,
         None => return,
     };
 
+    // count pulses
+    match pulse.kind {
+        PulseKind::Low => accum.low_count += 1,
+        PulseKind::High => accum.high_count += 1,
+    }
+
+    // sim the pulse
     match &mut node.kind {
         NodeKind::FlipFlop(state) => {
             match pulse.kind {
@@ -254,7 +327,7 @@ fn parsing() {
 
 #[test]
 fn node_flipflop() {
-    let mut nodes: HashMap<String, Node> = HashMap::new();
+    let mut nodes: HashMap<String, RefCell<Node>> = HashMap::new();
 
     let mut node_a = Node {
         children: vec!["b".to_string(), "c".to_string()],
@@ -276,37 +349,38 @@ fn node_flipflop() {
     node_a
         .pulses
         .push_back(Pulse::new(PulseKind::Low, "b".to_string()));
-    nodes.insert("tst".to_string(), node_a);
+    nodes.insert("tst".to_string(), RefCell::new(node_a));
 
     let mut node_b = Node {
         children: vec![],
         kind: NodeKind::FlipFlop(false),
         pulses: VecDeque::new(),
     };
-    nodes.insert("b".to_string(), node_b);
+    nodes.insert("b".to_string(), RefCell::new(node_b));
 
     let mut node_c = Node {
         children: vec![],
         kind: NodeKind::FlipFlop(false),
         pulses: VecDeque::new(),
     };
-    nodes.insert("c".to_string(), node_c);
+    nodes.insert("c".to_string(), RefCell::new(node_c));
 
     // three pulses to process
-    step_node("tst", &mut nodes);
-    step_node("tst", &mut nodes);
-    step_node("tst", &mut nodes);
-    step_node("tst", &mut nodes);
-    step_node("tst", &mut nodes);
+    let mut accum = Accumulator::new();
+    step_node("tst", &mut nodes, &mut accum);
+    step_node("tst", &mut nodes, &mut accum);
+    step_node("tst", &mut nodes, &mut accum);
+    step_node("tst", &mut nodes, &mut accum);
+    step_node("tst", &mut nodes, &mut accum);
 
     // validate
-    let bn = nodes.get("b").unwrap();
+    let bn = nodes.get("b").unwrap().borrow();
     assert_eq!(bn.pulses.len(), 3);
     assert_eq!(bn.pulses[0].kind, PulseKind::High);
     assert_eq!(bn.pulses[1].kind, PulseKind::Low);
     assert_eq!(bn.pulses[2].kind, PulseKind::High);
 
-    let cn = nodes.get("c").unwrap();
+    let cn = nodes.get("c").unwrap().borrow();
     assert_eq!(cn.pulses.len(), 3);
     assert_eq!(cn.pulses[0].kind, PulseKind::High);
     assert_eq!(cn.pulses[1].kind, PulseKind::Low);
@@ -315,7 +389,7 @@ fn node_flipflop() {
 
 #[test]
 fn node_conjunction() {
-    let mut nodes: HashMap<String, Node> = HashMap::new();
+    let mut nodes: HashMap<String, RefCell<Node>> = HashMap::new();
 
     let mut memory: HashMap<String, PulseKind> = HashMap::new();
     memory.insert("first".to_string(), PulseKind::Low);
@@ -342,24 +416,25 @@ fn node_conjunction() {
     node_a
         .pulses
         .push_back(Pulse::new(PulseKind::Low, "second".to_string()));
-    nodes.insert("tst".to_string(), node_a);
+    nodes.insert("tst".to_string(), RefCell::new(node_a));
 
     let mut node_b = Node {
         children: vec![],
         kind: NodeKind::FlipFlop(false),
         pulses: VecDeque::new(),
     };
-    nodes.insert("b".to_string(), node_b);
+    nodes.insert("b".to_string(), RefCell::new(node_b));
 
     // pulses to process
-    step_node("tst", &mut nodes);
-    step_node("tst", &mut nodes);
-    step_node("tst", &mut nodes);
-    step_node("tst", &mut nodes);
-    step_node("tst", &mut nodes);
+    let mut accum = Accumulator::new();
+    step_node("tst", &mut nodes, &mut accum);
+    step_node("tst", &mut nodes, &mut accum);
+    step_node("tst", &mut nodes, &mut accum);
+    step_node("tst", &mut nodes, &mut accum);
+    step_node("tst", &mut nodes, &mut accum);
 
     // validate
-    let bn = nodes.get("b").unwrap();
+    let bn = nodes.get("b").unwrap().borrow();
     assert_eq!(bn.pulses.len(), 5);
     assert_eq!(bn.pulses[0].kind, PulseKind::High);
     assert_eq!(bn.pulses[1].kind, PulseKind::High);
@@ -370,7 +445,7 @@ fn node_conjunction() {
 
 #[test]
 fn node_broadcast() {
-    let mut nodes: HashMap<String, Node> = HashMap::new();
+    let mut nodes: HashMap<String, RefCell<Node>> = HashMap::new();
 
     let mut node_a = Node {
         children: vec!["b".to_string(), "c".to_string()],
@@ -384,34 +459,45 @@ fn node_broadcast() {
     node_a
         .pulses
         .push_back(Pulse::new(PulseKind::High, "second".to_string()));
-    nodes.insert("tst".to_string(), node_a);
+    nodes.insert("tst".to_string(), RefCell::new(node_a));
 
     let mut node_b = Node {
         children: vec![],
         kind: NodeKind::FlipFlop(false),
         pulses: VecDeque::new(),
     };
-    nodes.insert("b".to_string(), node_b);
+    nodes.insert("b".to_string(), RefCell::new(node_b));
 
     let mut node_c = Node {
         children: vec![],
         kind: NodeKind::FlipFlop(false),
         pulses: VecDeque::new(),
     };
-    nodes.insert("c".to_string(), node_c);
+    nodes.insert("c".to_string(), RefCell::new(node_c));
 
     // pulses to process
-    step_node("tst", &mut nodes);
-    step_node("tst", &mut nodes);
+    let mut accum = Accumulator::new();
+    step_node("tst", &mut nodes, &mut accum);
+    step_node("tst", &mut nodes, &mut accum);
 
     // validate
-    let bn = nodes.get("b").unwrap();
+    let bn = nodes.get("b").unwrap().borrow();
     assert_eq!(bn.pulses.len(), 2);
     assert_eq!(bn.pulses[0].kind, PulseKind::Low);
     assert_eq!(bn.pulses[1].kind, PulseKind::High);
 
-    let cn = nodes.get("c").unwrap();
+    let cn = nodes.get("c").unwrap().borrow();
     assert_eq!(cn.pulses.len(), 2);
     assert_eq!(cn.pulses[0].kind, PulseKind::Low);
     assert_eq!(cn.pulses[1].kind, PulseKind::High);
+}
+
+#[test]
+fn button_single() {
+    let mut all_nodes = parse_map("resources/day_20/day_20_sample_one.txt");
+    let mut accum = Accumulator::new();
+    press_button(&mut all_nodes, &mut accum);
+
+    assert_eq!(accum.low_count, 8);
+    assert_eq!(accum.high_count, 4);
 }
