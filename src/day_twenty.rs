@@ -12,10 +12,54 @@ use std::collections::HashMap;
 use std::collections::VecDeque;
 
 const BROADCASTER_ID: &str = "broadcaster";
+const FEED_ID: &str = "ft";
 
 pub fn run() {
-    let v = part_one("resources/inputs/day_20.txt", 1000);
-    println!("{v}");
+    let v = part_two("resources/inputs/day_20.txt");
+}
+
+// This will print out the cyceles of each of the inputs to feed
+fn part_two(file_dir: &str) {
+    let mut all_nodes = parse_map(file_dir);
+
+    let mut accum = Accumulator::new();
+    for i in 0..5000 {
+        press_button(&mut all_nodes, &mut accum, i + 1);
+    }
+}
+
+fn watch(
+    i: i64,
+    id: &str,
+    dict: &mut HashMap<String, i64>,
+    all_nodes: &mut HashMap<String, RefCell<Node>>,
+) {
+    match &all_nodes.get(id).unwrap().borrow().kind {
+        /*
+        NodeKind::FlipFlop(state) => {
+            if state && !dict.contains_key(&id.to_string()) {
+                println!("found {id}");
+                dict.insert(id.to_string(), i);
+            }
+        }
+        */
+        NodeKind::Conjunction(state) => {
+            // send a pulses
+            let mut all_high = true;
+            for (key, value) in &state.memory {
+                if *value == PulseKind::Low {
+                    all_high = false;
+                    break;
+                }
+            }
+
+            if !all_high && !dict.contains_key(&id.to_string()) {
+                println!("found {id}");
+                dict.insert(id.to_string(), i);
+            }
+        }
+        _ => {}
+    }
 }
 
 fn part_one(file_dir: &str, press_count: i64) -> i64 {
@@ -23,19 +67,24 @@ fn part_one(file_dir: &str, press_count: i64) -> i64 {
 
     let mut accum = Accumulator::new();
     for i in 0..press_count {
-        press_button(&mut all_nodes, &mut accum);
+        press_button(&mut all_nodes, &mut accum, i + 1);
     }
 
     return accum.low_count * accum.high_count;
 }
 
-fn press_button(all_nodes: &mut HashMap<String, RefCell<Node>>, accum: &mut Accumulator) {
+fn press_button(
+    all_nodes: &mut HashMap<String, RefCell<Node>>,
+    accum: &mut Accumulator,
+    press_count: i64,
+) {
     // send first pulse on broadcaster
     {
         queue_pulse(
             Pulse::new(PulseKind::Low, "button".to_string()),
             vec![BROADCASTER_ID.to_string()],
             all_nodes,
+            press_count,
         );
     }
 
@@ -54,7 +103,7 @@ fn press_button(all_nodes: &mut HashMap<String, RefCell<Node>>, accum: &mut Accu
 
             if step {
                 did_process = true;
-                step_node(key, all_nodes, accum);
+                step_node(key, all_nodes, accum, press_count);
             }
         }
 
@@ -120,14 +169,28 @@ impl Accumulator {
     }
 }
 
-fn queue_pulse(pulse: Pulse, nodes: Vec<String>, all_nodes: &HashMap<String, RefCell<Node>>) {
+fn queue_pulse(
+    pulse: Pulse,
+    nodes: Vec<String>,
+    all_nodes: &HashMap<String, RefCell<Node>>,
+    press_current: i64,
+) {
     for id in nodes {
+        if id == FEED_ID && pulse.kind == PulseKind::High {
+            println!("found {:?} {press_current}", pulse.source_id);
+        }
+
         let mut node = all_nodes.get(&id).unwrap().borrow_mut();
         node.pulses.push_back(pulse.clone());
     }
 }
 
-fn step_node(node_id: &str, all_nodes: &HashMap<String, RefCell<Node>>, accum: &mut Accumulator) {
+fn step_node(
+    node_id: &str,
+    all_nodes: &HashMap<String, RefCell<Node>>,
+    accum: &mut Accumulator,
+    press_count: i64,
+) {
     let mut node = all_nodes.get(node_id).unwrap().borrow_mut();
 
     let pulse = match node.pulses.pop_front() {
@@ -164,12 +227,14 @@ fn step_node(node_id: &str, all_nodes: &HashMap<String, RefCell<Node>>, accum: &
                             Pulse::new(PulseKind::Low, node_id.to_string()),
                             node.children.clone(),
                             all_nodes,
+                            press_count,
                         );
                     } else {
                         queue_pulse(
                             Pulse::new(PulseKind::High, node_id.to_string()),
                             node.children.clone(),
                             all_nodes,
+                            press_count,
                         );
                     }
                 }
@@ -201,12 +266,14 @@ fn step_node(node_id: &str, all_nodes: &HashMap<String, RefCell<Node>>, accum: &
                     Pulse::new(PulseKind::Low, node_id.to_string()),
                     node.children.clone(),
                     all_nodes,
+                    press_count,
                 );
             } else {
                 queue_pulse(
                     Pulse::new(PulseKind::High, node_id.to_string()),
                     node.children.clone(),
                     all_nodes,
+                    press_count,
                 );
             }
         }
@@ -216,6 +283,7 @@ fn step_node(node_id: &str, all_nodes: &HashMap<String, RefCell<Node>>, accum: &
                 Pulse::new(pulse.kind, node_id.to_string()),
                 node.children.clone(),
                 all_nodes,
+                press_count,
             );
         }
     }
@@ -446,11 +514,11 @@ fn node_flipflop() {
 
     // three pulses to process
     let mut accum = Accumulator::new();
-    step_node("tst", &mut nodes, &mut accum);
-    step_node("tst", &mut nodes, &mut accum);
-    step_node("tst", &mut nodes, &mut accum);
-    step_node("tst", &mut nodes, &mut accum);
-    step_node("tst", &mut nodes, &mut accum);
+    step_node("tst", &mut nodes, &mut accum, 0);
+    step_node("tst", &mut nodes, &mut accum, 0);
+    step_node("tst", &mut nodes, &mut accum, 0);
+    step_node("tst", &mut nodes, &mut accum, 0);
+    step_node("tst", &mut nodes, &mut accum, 0);
 
     // validate
     let bn = nodes.get("b").unwrap().borrow();
@@ -506,11 +574,11 @@ fn node_conjunction() {
 
     // pulses to process
     let mut accum = Accumulator::new();
-    step_node("tst", &mut nodes, &mut accum);
-    step_node("tst", &mut nodes, &mut accum);
-    step_node("tst", &mut nodes, &mut accum);
-    step_node("tst", &mut nodes, &mut accum);
-    step_node("tst", &mut nodes, &mut accum);
+    step_node("tst", &mut nodes, &mut accum, 0);
+    step_node("tst", &mut nodes, &mut accum, 0);
+    step_node("tst", &mut nodes, &mut accum, 0);
+    step_node("tst", &mut nodes, &mut accum, 0);
+    step_node("tst", &mut nodes, &mut accum, 0);
 
     // validate
     let bn = nodes.get("b").unwrap().borrow();
@@ -556,8 +624,8 @@ fn node_broadcast() {
 
     // pulses to process
     let mut accum = Accumulator::new();
-    step_node("tst", &mut nodes, &mut accum);
-    step_node("tst", &mut nodes, &mut accum);
+    step_node("tst", &mut nodes, &mut accum, 0);
+    step_node("tst", &mut nodes, &mut accum, 0);
 
     // validate
     let bn = nodes.get("b").unwrap().borrow();
@@ -575,7 +643,7 @@ fn node_broadcast() {
 fn button_single_sample_one() {
     let mut all_nodes = parse_map("resources/day_20/day_20_sample_one.txt");
     let mut accum = Accumulator::new();
-    press_button(&mut all_nodes, &mut accum);
+    press_button(&mut all_nodes, &mut accum, 0);
 
     assert_eq!(accum.low_count, 8);
     assert_eq!(accum.high_count, 4);
@@ -591,16 +659,14 @@ fn part_one_sample_one() {
 fn button_single_sample_two() {
     let mut all_nodes = parse_map("resources/day_20/day_20_sample_two.txt");
     let mut accum = Accumulator::new();
-    press_button(&mut all_nodes, &mut accum);
+    press_button(&mut all_nodes, &mut accum, 0);
 
     assert_eq!(accum.low_count, 4);
     assert_eq!(accum.high_count, 4);
 }
 
-/*
 #[test]
 fn part_one_sample_two() {
     let v = part_one("resources/day_20/day_20_sample_two.txt", 1000);
     assert_eq!(v, 11_687_500);
 }
-*/
