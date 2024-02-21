@@ -11,11 +11,14 @@ use core::cell::RefCell;
 use std::collections::HashMap;
 use std::collections::VecDeque;
 
-pub fn run() {}
+const BROADCASTER_ID: &str = "broadcaster";
+
+pub fn run() {
+    let v = part_one("resources/inputs/day_20.txt", 1000);
+    println!("{v}");
+}
 
 fn part_one(file_dir: &str, press_count: i64) -> i64 {
-    let mut ret: i64 = 0;
-
     let mut all_nodes = parse_map(file_dir);
 
     let mut accum = Accumulator::new();
@@ -23,23 +26,17 @@ fn part_one(file_dir: &str, press_count: i64) -> i64 {
         press_button(&mut all_nodes, &mut accum);
     }
 
-    return ret;
+    return accum.low_count * accum.high_count;
 }
 
 fn press_button(all_nodes: &mut HashMap<String, RefCell<Node>>, accum: &mut Accumulator) {
     // send first pulse on broadcaster
     {
-        let broadcaster = all_nodes.get("broadcaster").unwrap().borrow();
-
-        // this assumes there is no node with an empty id
         queue_pulse(
-            Pulse::new(PulseKind::Low, "".to_string()),
-            broadcaster.children.clone(),
+            Pulse::new(PulseKind::Low, "button".to_string()),
+            vec![BROADCASTER_ID.to_string()],
             all_nodes,
         );
-
-        // manually count this pulse
-        accum.low_count += 1;
     }
 
     // process all queues, until they're all empty
@@ -90,6 +87,7 @@ enum NodeKind {
     FlipFlop(bool),
     Conjunction(ConjunctionState),
     Broadcast,
+    Empty,
 }
 
 struct NodeState {
@@ -137,6 +135,8 @@ fn step_node(node_id: &str, all_nodes: &HashMap<String, RefCell<Node>>, accum: &
         None => return,
     };
 
+    //println!("{:?} -{:?}-> {:?}", pulse.source_id, pulse.kind, node_id);
+
     // count pulses
     match pulse.kind {
         PulseKind::Low => accum.low_count += 1,
@@ -145,6 +145,10 @@ fn step_node(node_id: &str, all_nodes: &HashMap<String, RefCell<Node>>, accum: &
 
     // sim the pulse
     match &mut node.kind {
+        NodeKind::Empty => {
+            // Do nothing for empty nodes.
+        }
+
         NodeKind::FlipFlop(state) => {
             match pulse.kind {
                 PulseKind::High => {
@@ -208,7 +212,11 @@ fn step_node(node_id: &str, all_nodes: &HashMap<String, RefCell<Node>>, accum: &
         }
 
         NodeKind::Broadcast => {
-            queue_pulse(pulse, node.children.clone(), all_nodes);
+            queue_pulse(
+                Pulse::new(pulse.kind, node_id.to_string()),
+                node.children.clone(),
+                all_nodes,
+            );
         }
     }
 }
@@ -267,26 +275,47 @@ fn parse_map(file_dir: &str) -> HashMap<String, RefCell<Node>> {
     // Do a second pass to init the conjunctions memory
     // This will mut borrow twice if a node is its own parent.
     // So don't do that.
+    // This also creates empty nodes if the child doesn't exist.
+    let mut empties: Vec<String> = vec![];
     for (key, value) in &nodes {
         let node = value.borrow();
         for child_id in &node.children {
-            let mut child = nodes.get(child_id).unwrap().borrow_mut();
-            match &mut child.kind {
-                NodeKind::Conjunction(state) => {
-                    state.memory.insert(key.to_string(), PulseKind::Low);
+            match nodes.get(child_id) {
+                Some(child_cell) => {
+                    let mut child = child_cell.borrow_mut();
+
+                    match &mut child.kind {
+                        NodeKind::Conjunction(state) => {
+                            state.memory.insert(key.to_string(), PulseKind::Low);
+                        }
+                        _ => {
+                            // do nothing for other types
+                        }
+                    }
                 }
-                _ => {
-                    // do nothing for other types
+                None => {
+                    empties.push(child_id.clone());
                 }
             }
         }
+    }
+
+    // Create an empty nodes
+    for id in empties {
+        let mut n = Node {
+            children: vec![],
+            kind: NodeKind::Empty,
+            pulses: VecDeque::new(),
+        };
+
+        nodes.insert(id.clone(), RefCell::new(n));
     }
 
     return nodes;
 }
 
 #[test]
-fn parsing() {
+fn parsing_one() {
     let all_nodes = parse_map("resources/day_20/day_20_sample_one.txt");
 
     assert_eq!(all_nodes.len(), 5);
@@ -323,6 +352,56 @@ fn parsing() {
         }
         _ => panic!("Wrong node type."),
     }
+}
+
+#[test]
+fn parsing_two() {
+    let all_nodes = parse_map("resources/day_20/day_20_sample_two.txt");
+
+    assert_eq!(all_nodes.len(), 6);
+
+    let node = all_nodes.get("broadcaster").unwrap().borrow();
+    assert_eq!(node.kind, NodeKind::Broadcast);
+    assert_eq!(node.children.len(), 1);
+    assert_eq!(node.children[0], "a".to_string());
+
+    let node = all_nodes.get("a").unwrap().borrow();
+    assert_eq!(node.kind, NodeKind::FlipFlop(false));
+    assert_eq!(node.children.len(), 2);
+    assert_eq!(node.children[0], "inv".to_string());
+    assert_eq!(node.children[1], "con".to_string());
+
+    let node = all_nodes.get("inv").unwrap().borrow();
+    assert_eq!(node.children.len(), 1);
+    assert_eq!(node.children[0], "b".to_string());
+    match &node.kind {
+        NodeKind::Conjunction(state) => {
+            assert_eq!(state.memory.len(), 1);
+            assert_eq!(state.memory.contains_key("a"), true);
+        }
+        _ => panic!("Wrong node type."),
+    }
+
+    let node = all_nodes.get("b").unwrap().borrow();
+    assert_eq!(node.kind, NodeKind::FlipFlop(false));
+    assert_eq!(node.children.len(), 1);
+    assert_eq!(node.children[0], "con".to_string());
+
+    let node = all_nodes.get("con").unwrap().borrow();
+    assert_eq!(node.children.len(), 1);
+    assert_eq!(node.children[0], "output".to_string());
+    match &node.kind {
+        NodeKind::Conjunction(state) => {
+            assert_eq!(state.memory.len(), 2);
+            assert_eq!(state.memory.contains_key("b"), true);
+            assert_eq!(state.memory.contains_key("a"), true);
+        }
+        _ => panic!("Wrong node type."),
+    }
+
+    let node = all_nodes.get("output").unwrap().borrow();
+    assert_eq!(node.kind, NodeKind::Empty);
+    assert_eq!(node.children.len(), 0);
 }
 
 #[test]
@@ -493,7 +572,7 @@ fn node_broadcast() {
 }
 
 #[test]
-fn button_single() {
+fn button_single_sample_one() {
     let mut all_nodes = parse_map("resources/day_20/day_20_sample_one.txt");
     let mut accum = Accumulator::new();
     press_button(&mut all_nodes, &mut accum);
@@ -501,3 +580,27 @@ fn button_single() {
     assert_eq!(accum.low_count, 8);
     assert_eq!(accum.high_count, 4);
 }
+
+#[test]
+fn part_one_sample_one() {
+    let v = part_one("resources/day_20/day_20_sample_one.txt", 1000);
+    assert_eq!(v, 32_000_000);
+}
+
+#[test]
+fn button_single_sample_two() {
+    let mut all_nodes = parse_map("resources/day_20/day_20_sample_two.txt");
+    let mut accum = Accumulator::new();
+    press_button(&mut all_nodes, &mut accum);
+
+    assert_eq!(accum.low_count, 4);
+    assert_eq!(accum.high_count, 4);
+}
+
+/*
+#[test]
+fn part_one_sample_two() {
+    let v = part_one("resources/day_20/day_20_sample_two.txt", 1000);
+    assert_eq!(v, 11_687_500);
+}
+*/
