@@ -18,11 +18,16 @@ Algo
         - mark as visited
         - expand that cell horizontally to get the full number
         - parse and add number to sum
+*/
 
- */
-pub fn run() {
+pub fn part_one() {
     let contents: String = fs::read_to_string("resources/inputs/day_3.txt").unwrap();
+    let ret = process(&contents);
+    println!("{ret}");
+}
 
+pub fn part_two() {
+    let contents: String = fs::read_to_string("resources/inputs/day_3.txt").unwrap();
     let ret = process_gears(&contents);
     println!("{ret}");
 }
