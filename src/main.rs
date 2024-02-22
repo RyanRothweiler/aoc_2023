@@ -59,6 +59,7 @@ fn main() {
     days[1] = Day::new(day_two::part_one, day_two::part_two);
     days[2] = Day::new(day_three::part_one, day_three::part_two);
     days[3] = Day::new(day_four::part_one, day_four::part_two);
+    days[4] = Day::new(day_five::part_one, day_five::part_two);
 
     // run
     match days.get(usize::try_from(day - 1).unwrap()) {

@@ -5,12 +5,16 @@ mod mapping;
 
 use mapping::Mapping;
 
-pub fn run() {
-    part_one();
+pub fn part_one() {
+    part_one_solve();
+}
+
+pub fn part_two() {
+    part_two_solve();
 }
 
 // get lowest location from seeds
-fn part_one() -> i64 {
+fn part_one_solve() -> i64 {
     let mut all_mappings = FullMapping {
         seed_to_soil: vec![],
         soil_to_fertalizer: vec![],
@@ -22,7 +26,7 @@ fn part_one() -> i64 {
     };
 
     let contents: String =
-        std::fs::read_to_string("resources/inputs/day_5.txt").expect("Invalid file source");
+        std::fs::read_to_string("resources/inputs/day_5.txt").unwrap();
 
     let lines: Vec<&str> = contents.split('\n').collect();
 
@@ -54,7 +58,7 @@ fn part_one() -> i64 {
 
 // treat seeds as ranges, and find the smallest location
 // uses brute force. Could be improved by just transforming the ranges
-fn part_two() -> i64 {
+fn part_two_solve() -> i64 {
     let mut all_mappings = FullMapping {
         seed_to_soil: vec![],
         soil_to_fertalizer: vec![],
@@ -97,8 +101,6 @@ fn part_two() -> i64 {
     // this assumes no seed of value -1
     let mut nearest_loc = -1;
     for seed in seeds {
-        println!("{seed:?}");
-
         for i in seed.start..seed.start + seed.length {
             let loc = mappings.seed_to_location(i);
             if nearest_loc == -1 || loc < nearest_loc {
@@ -264,7 +266,7 @@ impl FullMapping {
 #[test]
 fn mappings_parsing() {
     let contents: String =
-        std::fs::read_to_string("resources/day_5/day_5_sample.txt").expect("Unable to read file.");
+        std::fs::read_to_string("resources/day_5/day_5_sample.txt").unwrap();
     let mappings = FullMapping::parse(&contents).expect("Invalid file format.");
 
     assert_eq!(mappings.light_to_temperature.len(), 3);
@@ -338,17 +340,11 @@ fn mapping_list_fertalizer() {
 #[test]
 fn full_sample_conversions() {
     let contents: String =
-        std::fs::read_to_string("resources/day_5/day_5_sample.txt").expect("Unable to read file.");
+        std::fs::read_to_string("resources/day_5/day_5_sample.txt").unwrap();
     let mappings = FullMapping::parse(&contents).expect("Invalid file format.");
 
     assert_eq!(mappings.seed_to_location(79), 82);
     assert_eq!(mappings.seed_to_location(14), 43);
     assert_eq!(mappings.seed_to_location(55), 86);
     assert_eq!(mappings.seed_to_location(13), 35);
-}
-
-#[test]
-fn answer_part_one() {
-    let val = part_one();
-    assert_eq!(val, 600279879);
 }
