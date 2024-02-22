@@ -4,24 +4,30 @@ use core::cmp::Ordering;
 use std::collections::BTreeSet;
 use std::fs;
 
-pub fn run() {
-    let contents: String =
-        fs::read_to_string("resources/day_1_input.txt").expect("Could not find the file.");
+const NUM_WORDS: [&str; 9] = [
+    "one", "two", "three", "four", "five", "six", "seven", "eight", "nine",
+];
 
-    let mut sum: u32 = 0;
+pub fn part_one() {
+    process("resources/day_1_input.txt", vec![]);
+}
+
+pub fn part_two() {
+    process("resources/day_1_input.txt", NUM_WORDS.to_vec());
+}
+
+fn process(file_dir: &str, num_words: Vec<&str>) {
+    let contents: String = fs::read_to_string(file_dir).unwrap();
 
     let lines: Vec<&str> = contents.split('\n').collect();
 
+    let mut sum: u32 = 0;
     for l in lines {
-        sum += handle_line(l);
+        sum += handle_line(l, &num_words);
     }
 
     println!("{sum}");
 }
-
-const NUM_WORDS: [&str; 9] = [
-    "one", "two", "three", "four", "five", "six", "seven", "eight", "nine",
-];
 
 struct Entry {
     num: u32,
@@ -48,14 +54,14 @@ impl PartialEq for Entry {
 
 impl Eq for Entry {}
 
-fn handle_line(line: &str) -> u32 {
+fn handle_line(line: &str, num_words: &Vec<&str>) -> u32 {
     let mut tree: BTreeSet<Entry> = BTreeSet::new();
 
     let line_lower = line.to_lowercase();
 
     // Find the words
-    for i in 0..NUM_WORDS.len() {
-        match line_lower.find(NUM_WORDS[i]) {
+    for i in 0..num_words.len() {
+        match line_lower.find(num_words[i]) {
             Some(ind) => {
                 tree.insert(Entry {
                     num: (i + 1) as u32,
@@ -93,7 +99,6 @@ fn handle_line(line: &str) -> u32 {
     }
 
     if tree.len() == 0 {
-        eprintln!("Emptry, tree. No numbers on this line?");
         return 0;
     }
 
@@ -106,40 +111,43 @@ fn handle_line(line: &str) -> u32 {
 
 #[test]
 fn numbers_ends() {
-    assert_eq!(handle_line("1asfadf1"), 11);
+    assert_eq!(handle_line("1asfadf1", &NUM_WORDS.to_vec()), 11);
 }
 
 #[test]
 fn numbers_hidden() {
-    assert_eq!(handle_line("aa1sfa1d2fff3"), 13);
+    assert_eq!(handle_line("aa1sfa1d2fff3", &NUM_WORDS.to_vec()), 13);
 }
 
 #[test]
 fn numbers_single() {
-    assert_eq!(handle_line("2asfadf"), 22);
+    assert_eq!(handle_line("2asfadf", &NUM_WORDS.to_vec()), 22);
 }
 
 #[test]
 fn words_ends() {
-    assert_eq!(handle_line("oneasfadtwo"), 12);
+    assert_eq!(handle_line("oneasfadtwo", &NUM_WORDS.to_vec()), 12);
 }
 
 #[test]
 fn words_extra() {
-    assert_eq!(handle_line("oneasonefadtwothree"), 13);
+    assert_eq!(handle_line("oneasonefadtwothree", &NUM_WORDS.to_vec()), 13);
 }
 
 #[test]
 fn mixed_numbers_ends() {
-    assert_eq!(handle_line("1asonefadtwothree9"), 19);
+    assert_eq!(handle_line("1asonefadtwothree9", &NUM_WORDS.to_vec()), 19);
 }
 
 #[test]
 fn mixed_ends() {
-    assert_eq!(handle_line("asfivefadtwothree9"), 59);
+    assert_eq!(handle_line("asfivefadtwothree9", &NUM_WORDS.to_vec()), 59);
 }
 
 #[test]
 fn mixed_hidden() {
-    assert_eq!(handle_line("asfivefadtwothree9theeeeee"), 59);
+    assert_eq!(
+        handle_line("asfivefadtwothree9theeeeee", &NUM_WORDS.to_vec()),
+        59
+    );
 }
