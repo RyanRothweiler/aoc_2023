@@ -8,21 +8,18 @@ const RED_LIMIT: u64 = 12;
 const GREEN_LIMIT: u64 = 13;
 const BLUE_LIMIT: u64 = 14;
 
-pub fn run() {
-    // part 1
-    //sum_valid_games();
+pub fn part_one() {
+    sum_valid_games();
+}
 
-    // part 2
-    //get_games_power();
-    
-    // part 3
+pub fn part_two() {
+    get_games_power();
 }
 
 // Finds the minimum number of marbles required for each game, then multiplies them together.
 // This is considered the marbles "power"
 fn get_games_power() {
-    let contents: String =
-        fs::read_to_string("resources/inputs/day_2.txt").unwrap();
+    let contents: String = fs::read_to_string("resources/inputs/day_2.txt").unwrap();
 
     let lines: Vec<&str> = contents.split('\n').collect();
     let mut accum: u64 = 0;
@@ -36,13 +33,13 @@ fn get_games_power() {
             }
         }
     }
-    println!("Final power {accum}");
+
+    println!("{accum}");
 }
 
 // sums the games which are valid according to the color within_limits
 fn sum_valid_games() {
-    let contents: String =
-        fs::read_to_string("resources/inputs/day_2.txt").unwrap();
+    let contents: String = fs::read_to_string("resources/inputs/day_2.txt").unwrap();
 
     let lines: Vec<&str> = contents.split('\n').collect();
     let mut sum: u64 = 0;
@@ -56,7 +53,8 @@ fn sum_valid_games() {
             }
         }
     }
-    println!("Final sum {sum}");
+
+    println!("{sum}");
 }
 
 #[derive(PartialEq, Eq, Hash, Debug)]
@@ -107,14 +105,12 @@ fn parse_game(input: &str) -> Option<Game> {
 
     let info_pulls: Vec<&str> = input.split(':').collect();
     if info_pulls.len() != 2 {
-        eprintln!("Invalid game format.");
         return None;
     }
 
     // get the ID
     let game_id: Vec<&str> = info_pulls[0].split(' ').collect();
     if game_id.len() != 2 {
-        eprintln!("Invalid game format.");
         return None;
     }
     ret.id = match game_id[1].parse() {
@@ -172,10 +168,7 @@ fn parse_game(input: &str) -> Option<Game> {
 fn game_valid(game_string: &str) -> Option<u64> {
     let game = match parse_game(game_string) {
         Some(t) => t,
-        None => {
-            eprintln!("Error parsing game");
-            return None;
-        }
+        None => return None,
     };
 
     for pull in game.pulls {
@@ -193,10 +186,7 @@ fn game_valid(game_string: &str) -> Option<u64> {
 fn get_minimum_power(game_string: &str) -> Option<u64> {
     let game = match parse_game(game_string) {
         Some(t) => t,
-        None => {
-            eprintln!("Error parsing game");
-            return None;
-        }
+        None => return None,
     };
 
     let mut maximums: HashMap<Color, u64> = HashMap::new();

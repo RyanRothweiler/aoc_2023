@@ -56,6 +56,7 @@ fn main() {
     // build days
     let mut days: [Day; 20] = [Day::new(day_one::part_one, day_one::part_two); 20];
     days[0] = Day::new(day_one::part_one, day_one::part_two);
+    days[1] = Day::new(day_two::part_one, day_two::part_two);
 
     // run
     match days.get(usize::try_from(day - 1).unwrap()) {

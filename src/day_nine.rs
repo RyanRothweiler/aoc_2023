@@ -10,7 +10,6 @@
 pub fn run() {
     let contents = std::fs::read_to_string("resources/inputs/day_9.txt").unwrap();
 
-    //let mut answers: Vec<i64> = vec![];
     let mut sum: i64 = 0;
     let lines: Vec<&str> = contents.split('\n').collect();
 
