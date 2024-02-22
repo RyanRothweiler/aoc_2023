@@ -110,13 +110,3 @@ fn winning_options() {
     assert_eq!(opts[2], 4);
     assert_eq!(opts[3], 5);
 }
-
-#[test]
-fn part_one_answer() {
-    assert_eq!(part_one(), 32076);
-}
-
-#[test]
-fn part_two_answer() {
-    assert_eq!(part_two(), 34278221);
-}

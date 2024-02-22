@@ -10,7 +10,7 @@
 use std::collections::HashMap;
 
 pub fn run() {
-    let c = steps_count("resources/day_8/day_8_input.txt").unwrap();
+    let c = steps_count("resources/inputs/day_8.txt").unwrap();
     println!("{c}");
 }
 

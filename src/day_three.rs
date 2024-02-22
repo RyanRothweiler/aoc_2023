@@ -21,8 +21,7 @@ Algo
 
  */
 pub fn run() {
-    let contents: String =
-        fs::read_to_string("resources/day_3_input.txt").expect("Couldn't find file.");
+    let contents: String = fs::read_to_string("resources/inputs/day_3.txt").unwrap();
 
     let ret = process_gears(&contents);
     println!("{ret}");
@@ -299,55 +298,52 @@ fn check_direction(cells: &mut TwoDimArray<Cell>, x: usize, y: usize) -> Option<
 #[test]
 fn single_number() {
     // one number one symbol in the middle of the map
-    let contents: String = fs::read_to_string("resources/day_3_testing_single_number.txt")
-        .expect("Couldn't find file.");
+    let contents: String =
+        fs::read_to_string("resources/day_3/day_3_testing_single_number.txt").unwrap();
     assert_eq!(process(&contents), 18);
 }
 
 #[test]
 fn single_number_edge() {
     // one number one symbol at the edge of the map
-    let contents: String = fs::read_to_string("resources/day_3_testing_single_number_edge.txt")
-        .expect("Couldn't find file.");
+    let contents: String =
+        fs::read_to_string("resources/day_3/day_3_testing_single_number_edge.txt").unwrap();
     assert_eq!(process(&contents), 18);
 }
 
 #[test]
 fn two() {
     // two numbers around one symbol
-    let contents: String =
-        fs::read_to_string("resources/day_3_testing_two.txt").expect("Couldn't find file.");
+    let contents: String = fs::read_to_string("resources/day_3/day_3_testing_two.txt").unwrap();
     assert_eq!(process(&contents), 118);
 }
 
 #[test]
 fn two_two_symbols() {
     // two numbers two symbols
-    let contents: String = fs::read_to_string("resources/day_3_testing_two_two_symbols.txt")
-        .expect("Couldn't find file.");
+    let contents: String =
+        fs::read_to_string("resources/day_3/day_3_testing_two_two_symbols.txt").unwrap();
     assert_eq!(process(&contents), 118);
 }
 
 #[test]
 fn rectangular() {
     // test a rectangular map
-    let contents: String =
-        fs::read_to_string("resources/day_3_testing_rect.txt").expect("Couldn't find file.");
+    let contents: String = fs::read_to_string("resources/day_3/day_3_testing_rect.txt").unwrap();
     assert_eq!(process(&contents), 160);
 }
 
 #[test]
 fn two_two_symbols_gears() {
     // two numbers two symbols
-    let contents: String = fs::read_to_string("resources/day_3_testing_two_two_symbols.txt")
-        .expect("Couldn't find file.");
+    let contents: String =
+        fs::read_to_string("resources/day_3/day_3_testing_two_two_symbols.txt").unwrap();
     assert_eq!(process_gears(&contents), 1800);
 }
 
 #[test]
 fn two_two_symbols_gears_sample() {
     // two numbers two symbols
-    let contents: String =
-        fs::read_to_string("resources/day_3_testing_gears.txt").expect("Couldn't find file.");
+    let contents: String = fs::read_to_string("resources/day_3/day_3_testing_gears.txt").unwrap();
     assert_eq!(process_gears(&contents), 467835);
 }

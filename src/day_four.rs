@@ -1,8 +1,7 @@
 #![allow(unused_variables, dead_code, unused_mut, unused_imports)]
 
 pub fn run() {
-    let contents: String =
-        std::fs::read_to_string("resources/day_4/day_4_input.txt").expect("Unable to read file.");
+    let contents: String = std::fs::read_to_string("resources/inputs/day_4.txt").unwrap();
 
     let sum: u64 = cards_count(&contents).expect("Error parsing input.");
 
@@ -209,14 +208,12 @@ fn card_five() {
 
 #[test]
 fn part_two_sample() {
-    let contents: String =
-        std::fs::read_to_string("resources/day_4/day_4_sample.txt").expect("Invalid file.");
+    let contents: String = std::fs::read_to_string("resources/day_4/day_4_sample.txt").unwrap();
     assert_eq!(cards_count(&contents), Some(30));
 }
 
 #[test]
 fn part_two_sample_two() {
-    let contents: String =
-        std::fs::read_to_string("resources/day_4/day_4_sample_two.txt").expect("Invalid file.");
+    let contents: String = std::fs::read_to_string("resources/day_4/day_4_sample_two.txt").unwrap();
     assert_eq!(cards_count(&contents), Some(15));
 }

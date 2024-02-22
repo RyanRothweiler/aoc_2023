@@ -9,11 +9,11 @@ const NUM_WORDS: [&str; 9] = [
 ];
 
 pub fn part_one() {
-    process("resources/day_1_input.txt", vec![]);
+    process("resources/inputs/day_1.txt", vec![]);
 }
 
 pub fn part_two() {
-    process("resources/day_1_input.txt", NUM_WORDS.to_vec());
+    process("resources/inputs/day_1.txt", NUM_WORDS.to_vec());
 }
 
 fn process(file_dir: &str, num_words: Vec<&str>) {

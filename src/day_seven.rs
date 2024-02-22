@@ -18,8 +18,7 @@ pub fn run() {
 }
 
 fn part_one() -> i64 {
-    let contents =
-        std::fs::read_to_string("resources/day_7/day_7_input.txt").expect("Invalid file");
+    let contents = std::fs::read_to_string("resources/inputs/day_7.txt").unwrap();
 
     let lines: Vec<&str> = contents.split('\n').collect();
     let mut hands: Vec<Hand> = vec![];
@@ -191,7 +190,6 @@ impl Hand {
         let mut two = false;
         let mut two_count = 0;
         for (key, value) in &cards_count {
-
             // jack counts are special cased, so that they don't interact with eachother
             if *key == Card::J {
                 continue;
@@ -240,7 +238,6 @@ impl Hand {
         for (key, value) in &cards_count {
             // found tripplet
             if *value + jack_count == 3 {
-
                 // check for a pair without jacks
                 for (key_inner, value_inner) in &cards_count {
                     if *key_inner != Card::J && *key_inner != *key && *value_inner == 2 {
@@ -466,7 +463,6 @@ fn sample_hard() {
     assert_eq!(hands[2].bet, 3);
     assert_eq!(hands[3].bet, 5);
 }
-
 
 #[test]
 fn part_two_answer() {

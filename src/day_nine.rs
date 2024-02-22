@@ -8,7 +8,7 @@
 )]
 
 pub fn run() {
-    let contents = std::fs::read_to_string("resources/day_9/day_9_input.txt").unwrap();
+    let contents = std::fs::read_to_string("resources/inputs/day_9.txt").unwrap();
 
     //let mut answers: Vec<i64> = vec![];
     let mut sum: i64 = 0;
@@ -38,7 +38,7 @@ struct Row {
     nums: Vec<i64>,
 }
 
-fn build_rows(input: Vec<i64>) -> Vec<Row>{
+fn build_rows(input: Vec<i64>) -> Vec<Row> {
     let mut rows: Vec<Row> = vec![];
     rows.push(Row { nums: input });
 
@@ -76,7 +76,6 @@ fn pattern_next(input: Vec<i64>) -> i64 {
     let mut new: i64 = 0;
     rows.reverse();
     for n in 1..rows.len() {
-
         let prev_row: i64 = *rows[n - 1].nums.last().unwrap();
         let curr_last: i64 = *rows[n].nums.last().unwrap();
         new = prev_row + curr_last;
@@ -94,7 +93,6 @@ fn pattern_prev(input: Vec<i64>) -> i64 {
     let mut new: i64 = 0;
     rows.reverse();
     for n in 1..rows.len() {
-
         let prev_row: i64 = *rows[n - 1].nums.first().unwrap();
         let curr_last: i64 = *rows[n].nums.first().unwrap();
         new = curr_last - prev_row;
@@ -126,7 +124,7 @@ fn sample_three_prev() {
 
 #[test]
 fn part_one() {
-    let contents = std::fs::read_to_string("resources/day_9/day_9_input.txt").unwrap();
+    let contents = std::fs::read_to_string("resources/inputs/day_9.txt").unwrap();
 
     //let mut answers: Vec<i64> = vec![];
     let mut sum: i64 = 0;
@@ -153,7 +151,7 @@ fn part_one() {
 
 #[test]
 fn part_two() {
-    let contents = std::fs::read_to_string("resources/day_9/day_9_input.txt").unwrap();
+    let contents = std::fs::read_to_string("resources/inputs/day_9.txt").unwrap();
 
     //let mut answers: Vec<i64> = vec![];
     let mut sum: i64 = 0;

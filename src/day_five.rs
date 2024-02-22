@@ -22,7 +22,7 @@ fn part_one() -> i64 {
     };
 
     let contents: String =
-        std::fs::read_to_string("resources/day_5/day_5_input.txt").expect("Invalid file source");
+        std::fs::read_to_string("resources/inputs/day_5.txt").expect("Invalid file source");
 
     let lines: Vec<&str> = contents.split('\n').collect();
 
@@ -66,7 +66,7 @@ fn part_two() -> i64 {
     };
 
     let contents: String =
-        std::fs::read_to_string("resources/day_5/day_5_input.txt").expect("Invalid file source");
+        std::fs::read_to_string("resources/inputs/day_5.txt").expect("Invalid file source");
 
     let lines: Vec<&str> = contents.split('\n').collect();
 

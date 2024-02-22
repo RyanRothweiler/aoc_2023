@@ -22,7 +22,7 @@ pub fn run() {
 // This is considered the marbles "power"
 fn get_games_power() {
     let contents: String =
-        fs::read_to_string("resources/day_2_input.txt").expect("Could not find the file.");
+        fs::read_to_string("resources/inputs/day_2.txt").unwrap();
 
     let lines: Vec<&str> = contents.split('\n').collect();
     let mut accum: u64 = 0;
@@ -42,7 +42,7 @@ fn get_games_power() {
 // sums the games which are valid according to the color within_limits
 fn sum_valid_games() {
     let contents: String =
-        fs::read_to_string("resources/day_2_input.txt").expect("Could not find the file.");
+        fs::read_to_string("resources/inputs/day_2.txt").unwrap();
 
     let lines: Vec<&str> = contents.split('\n').collect();
     let mut sum: u64 = 0;
