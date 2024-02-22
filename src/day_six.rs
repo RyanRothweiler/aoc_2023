@@ -1,10 +1,16 @@
 #![allow(unused_variables, dead_code, unused_mut, unused_imports)]
 
-pub fn run() {
-    part_two();
+pub fn part_one() {
+    let r = part_one_solve();
+    println!("{r}");
 }
 
-fn part_two() -> usize {
+pub fn part_two() {
+    let r = part_two_solve();
+    println!("{r}");
+}
+
+fn part_two_solve() -> usize {
     let track = Track {
         time: 44806572,
         record: 208158110501102,
@@ -13,7 +19,7 @@ fn part_two() -> usize {
     return track.get_winning_options().len();
 }
 
-fn part_one() -> usize {
+fn part_one_solve() -> usize {
     let first_track = Track {
         time: 44,
         record: 208,
@@ -69,8 +75,6 @@ impl Track {
         }
 
         let c = ret.len();
-        println!("{c}");
-
         ret
     }
 
@@ -78,7 +82,6 @@ impl Track {
         let winning = self.get_winning_options();
         let mut accum: u64 = 1;
         for w in winning {
-            println!("{w} {accum}");
             accum = accum * w;
         }
         accum
