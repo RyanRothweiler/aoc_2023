@@ -58,9 +58,9 @@ fn main() {
     days[0] = Day::new(day_one::part_one, day_one::part_two);
 
     // run
-    match days.get(day as usize) {
+    match days.get(usize::try_from(day - 1).unwrap()) {
         Some(d) => {
-            d.parts[(part - 1) as usize]();
+            d.parts[usize::try_from(part - 1).unwrap()]();
         }
         None => {
             eprintln!("No solution exists for that day.");
