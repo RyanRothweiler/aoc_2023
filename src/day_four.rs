@@ -1,10 +1,14 @@
 #![allow(unused_variables, dead_code, unused_mut, unused_imports)]
 
-pub fn run() {
+pub fn part_one() {
     let contents: String = std::fs::read_to_string("resources/inputs/day_4.txt").unwrap();
+    let sum: u64 = sum_points(&contents).expect("Error parsing input.");
+    println!("{sum}");
+}
 
+pub fn part_two() {
+    let contents: String = std::fs::read_to_string("resources/inputs/day_4.txt").unwrap();
     let sum: u64 = cards_count(&contents).expect("Error parsing input.");
-
     println!("{sum}");
 }
 
