@@ -9,7 +9,12 @@
 
 use std::collections::HashMap;
 
-pub fn run() {
+pub fn part_one() {
+    let v = sum_permutations("resources/inputs/day_12.txt", 1);
+    println!("{v}");
+}
+
+pub fn part_two() {
     let v = sum_permutations("resources/inputs/day_12.txt", 5);
     println!("{v}");
 }
