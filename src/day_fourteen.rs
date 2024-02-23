@@ -13,7 +13,15 @@ use std::hash::{Hash, Hasher};
 use crate::perma::twod::TwoD;
 use std::convert::From;
 
-pub fn run() {
+pub fn part_one() {
+    let contents = std::fs::read_to_string("resources/inputs/day_14.txt").unwrap();
+    let mut map = build_map(&contents);
+    slide_vert(&mut map, 1);
+    let v = calc_weight(&mut map);
+    println!("{v}");
+}
+
+pub fn part_two() {
     let contents = std::fs::read_to_string("resources/inputs/day_14.txt").unwrap();
     let mut map = build_map(&contents);
     let v = calc(&mut map, 1_000_000_000);
