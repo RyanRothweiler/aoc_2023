@@ -11,7 +11,18 @@ const MIRROR_BOX_COUNT: i64 = 256;
 
 use std::collections::HashMap;
 
-pub fn run() {
+pub fn part_one() {
+    let contents = std::fs::read_to_string("resources/inputs/day_15.txt").unwrap();
+
+    let entries: Vec<&str> = contents.split(',').collect();
+    let mut sum: i64 = 0;
+    for e in entries {
+        sum += hash(e);
+    }
+    println!("{sum}");
+}
+
+pub fn part_two() {
     let contents = std::fs::read_to_string("resources/inputs/day_15.txt").unwrap();
     let instructions = Instruction::parse_string(&contents);
     let v = align_mirrors_calc(&instructions);
