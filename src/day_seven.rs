@@ -11,20 +11,24 @@ use std::collections::HashMap;
 
 mod hand;
 
-pub fn run() {
-    // TODO this will give answer to part_two. Need to fix that to handle both/
-    let x = part_one();
-    println!("{x}");
+pub fn part_one() {
+    let r = solve(false);
+    println!("{r}");
 }
 
-fn part_one() -> i64 {
+pub fn part_two() {
+    let r = solve(true);
+    println!("{r}");
+}
+
+fn solve(j_wild: bool) -> i64 {
     let contents = std::fs::read_to_string("resources/inputs/day_7.txt").unwrap();
 
     let lines: Vec<&str> = contents.split('\n').collect();
     let mut hands: Vec<Hand> = vec![];
 
     for l in lines {
-        hands.push(Hand::from_string(l).expect("Invalid hand format"));
+        hands.push(Hand::from_string(l, j_wild).expect("Invalid hand format"));
     }
 
     hands.sort();
@@ -87,12 +91,47 @@ enum HandStrength {
     FiveKind,
 }
 
+const CARD_ORDERING_WILD: [Card; 13] = [
+    Card::J,
+    Card::Two,
+    Card::Three,
+    Card::Four,
+    Card::Five,
+    Card::Six,
+    Card::Seven,
+    Card::Eight,
+    Card::Nine,
+    Card::Ten,
+    Card::Q,
+    Card::K,
+    Card::A,
+];
+
+const CARD_ORDERING_STANDARD: [Card; 13] = [
+    Card::Two,
+    Card::Three,
+    Card::Four,
+    Card::Five,
+    Card::Six,
+    Card::Seven,
+    Card::Eight,
+    Card::Nine,
+    Card::Ten,
+    Card::J,
+    Card::Q,
+    Card::K,
+    Card::A,
+];
+
 #[derive(Eq)]
 struct Hand {
     cards: [Card; 5],
     strength: HandStrength,
 
     bet: i64,
+
+    // used to handle dynamic card orderings
+    card_ordering: Vec<Card>,
 }
 
 impl Ord for Hand {
@@ -102,9 +141,20 @@ impl Ord for Hand {
                 let c = self.cards[i];
                 let o = other.cards[i];
 
-                if self.cards[i] < other.cards[i] {
+                let c_index = self
+                    .card_ordering
+                    .iter()
+                    .position(|&i| i == c)
+                    .expect("Missing card in custom ordering.");
+                let o_index = self
+                    .card_ordering
+                    .iter()
+                    .position(|&i| i == o)
+                    .expect("Missing card in custom ordering.");
+
+                if c_index < o_index {
                     return Ordering::Less;
-                } else if self.cards[i] > other.cards[i] {
+                } else if c_index > o_index {
                     return Ordering::Greater;
                 }
             }
@@ -135,7 +185,7 @@ impl PartialEq for Hand {
 
 impl Hand {
     //format is  "AAQKJ 1234"
-    fn from_string(input: &str) -> Result<Hand, String> {
+    fn from_string(input: &str, j_wild: bool) -> Result<Hand, String> {
         let parts: Vec<&str> = input.trim().split(' ').collect();
         if parts.len() != 2 {
             return Err("Invalid hand format.".to_string());
@@ -161,14 +211,19 @@ impl Hand {
             }
         };
 
-        return Ok(Hand::new(cards, bet));
+        if j_wild {
+            return Ok(Hand::new_wild(cards, bet));
+        } else {
+            return Ok(Hand::new_standard(cards, bet));
+        }
     }
 
-    fn new(cards: [Card; 5], bet: i64) -> Hand {
+    fn new_wild(cards: [Card; 5], bet: i64) -> Hand {
         let mut ret = Hand {
             cards,
             strength: HandStrength::FiveKind,
             bet,
+            card_ordering: CARD_ORDERING_WILD.to_vec(),
         };
 
         let mut cards_count: HashMap<Card, i32> = HashMap::new();
@@ -268,20 +323,76 @@ impl Hand {
         ret.strength = HandStrength::HighCard;
         return ret;
     }
+
+    fn new_standard(cards: [Card; 5], bet: i64) -> Hand {
+        let mut ret = Hand {
+            cards,
+            strength: HandStrength::FiveKind,
+            bet,
+            card_ordering: CARD_ORDERING_STANDARD.to_vec(),
+        };
+
+        let mut cards_count: HashMap<Card, i32> = HashMap::new();
+
+        for c in cards {
+            let count: &mut i32 = cards_count.entry(c).or_insert(0);
+            *count += 1;
+        }
+
+        // Five of a kind
+        let mut five = false;
+        let mut four = false;
+        let mut three = false;
+        let mut two = false;
+        let mut two_count = 0;
+        for (key, value) in &cards_count {
+            if *value == 5 {
+                five = true;
+            }
+            if *value == 4 {
+                four = true;
+            }
+            if *value == 3 {
+                three = true;
+            }
+            if *value == 2 {
+                two = true;
+                two_count += 1;
+            }
+        }
+
+        if five {
+            ret.strength = HandStrength::FiveKind;
+        } else if four {
+            ret.strength = HandStrength::FourKind;
+        } else if three && two {
+            ret.strength = HandStrength::FullHouse;
+        } else if three {
+            ret.strength = HandStrength::ThreeKind;
+        } else if two_count == 2 {
+            ret.strength = HandStrength::TwoPair;
+        } else if two {
+            ret.strength = HandStrength::OnePair;
+        } else {
+            ret.strength = HandStrength::HighCard;
+        }
+
+        return ret;
+    }
 }
 
 #[test]
 fn build_hand() {
-    let hand = Hand::new([Card::A, Card::A, Card::A, Card::A, Card::A], 0);
+    let hand = Hand::new_wild([Card::A, Card::A, Card::A, Card::A, Card::A], 0);
     assert_eq!(hand.strength, HandStrength::FiveKind);
 
-    let hand = Hand::new([Card::A, Card::A, Card::A, Card::A, Card::K], 0);
+    let hand = Hand::new_wild([Card::A, Card::A, Card::A, Card::A, Card::K], 0);
     assert_eq!(hand.strength, HandStrength::FourKind);
 
-    let hand = Hand::new([Card::A, Card::A, Card::A, Card::K, Card::K], 0);
+    let hand = Hand::new_wild([Card::A, Card::A, Card::A, Card::K, Card::K], 0);
     assert_eq!(hand.strength, HandStrength::FullHouse);
 
-    let hand = Hand::new(
+    let hand = Hand::new_wild(
         [
             Card::Eight,
             Card::Seven,
@@ -293,16 +404,16 @@ fn build_hand() {
     );
     assert_eq!(hand.strength, HandStrength::FullHouse);
 
-    let hand = Hand::new([Card::A, Card::Q, Card::Q, Card::Q, Card::Ten], 0);
+    let hand = Hand::new_wild([Card::A, Card::Q, Card::Q, Card::Q, Card::Ten], 0);
     assert_eq!(hand.strength, HandStrength::ThreeKind);
 
-    let hand = Hand::new([Card::A, Card::A, Card::Q, Card::Q, Card::K], 0);
+    let hand = Hand::new_wild([Card::A, Card::A, Card::Q, Card::Q, Card::K], 0);
     assert_eq!(hand.strength, HandStrength::TwoPair);
 
-    let hand = Hand::new([Card::A, Card::A, Card::Eight, Card::Two, Card::K], 0);
+    let hand = Hand::new_wild([Card::A, Card::A, Card::Eight, Card::Two, Card::K], 0);
     assert_eq!(hand.strength, HandStrength::OnePair);
 
-    let hand = Hand::new([Card::A, Card::Q, Card::K, Card::Eight, Card::Ten], 0);
+    let hand = Hand::new_wild([Card::A, Card::Q, Card::K, Card::Eight, Card::Ten], 0);
     assert_eq!(hand.strength, HandStrength::HighCard)
 }
 
@@ -311,84 +422,84 @@ fn build_hand() {
 // High card isn't possible with wild. It would always be a pair.
 #[test]
 fn build_hand_wild() {
-    let hand = Hand::new([Card::A, Card::A, Card::A, Card::A, Card::J], 0);
+    let hand = Hand::new_wild([Card::A, Card::A, Card::A, Card::A, Card::J], 0);
     assert_eq!(hand.strength, HandStrength::FiveKind);
 
-    let hand = Hand::new([Card::A, Card::A, Card::A, Card::J, Card::K], 0);
+    let hand = Hand::new_wild([Card::A, Card::A, Card::A, Card::J, Card::K], 0);
     assert_eq!(hand.strength, HandStrength::FourKind);
 
-    let hand = Hand::new([Card::A, Card::A, Card::A, Card::K, Card::J], 0);
+    let hand = Hand::new_wild([Card::A, Card::A, Card::A, Card::K, Card::J], 0);
     assert_eq!(hand.strength, HandStrength::FourKind);
 
-    let hand = Hand::new(
+    let hand = Hand::new_wild(
         [Card::Eight, Card::Seven, Card::Eight, Card::Seven, Card::J],
         0,
     );
     assert_eq!(hand.strength, HandStrength::FullHouse);
 
-    let hand = Hand::new([Card::A, Card::Two, Card::Q, Card::Q, Card::J], 0);
+    let hand = Hand::new_wild([Card::A, Card::Two, Card::Q, Card::Q, Card::J], 0);
     assert_eq!(hand.strength, HandStrength::ThreeKind);
 
-    let hand = Hand::new([Card::A, Card::K, Card::Q, Card::J, Card::Ten], 0);
+    let hand = Hand::new_wild([Card::A, Card::K, Card::Q, Card::J, Card::Ten], 0);
     assert_eq!(hand.strength, HandStrength::OnePair);
 
-    let hand = Hand::new([Card::Three, Card::Two, Card::Ten, Card::Three, Card::K], 0);
+    let hand = Hand::new_wild([Card::Three, Card::Two, Card::Ten, Card::Three, Card::K], 0);
     assert_eq!(hand.strength, HandStrength::OnePair);
 
-    let hand = Hand::new([Card::Ten, Card::Five, Card::Five, Card::J, Card::Five], 0);
+    let hand = Hand::new_wild([Card::Ten, Card::Five, Card::Five, Card::J, Card::Five], 0);
     assert_eq!(hand.strength, HandStrength::FourKind);
 
-    let hand = Hand::new([Card::K, Card::K, Card::Six, Card::Seven, Card::Seven], 0);
+    let hand = Hand::new_wild([Card::K, Card::K, Card::Six, Card::Seven, Card::Seven], 0);
     assert_eq!(hand.strength, HandStrength::TwoPair);
 
-    let hand = Hand::new([Card::J, Card::J, Card::J, Card::J, Card::J], 0);
+    let hand = Hand::new_wild([Card::J, Card::J, Card::J, Card::J, Card::J], 0);
     assert_eq!(hand.strength, HandStrength::FiveKind);
 
-    let hand = Hand::new([Card::J, Card::J, Card::J, Card::J, Card::Q], 0);
+    let hand = Hand::new_wild([Card::J, Card::J, Card::J, Card::J, Card::Q], 0);
     assert_eq!(hand.strength, HandStrength::FiveKind);
 
-    let hand = Hand::new([Card::J, Card::Two, Card::Two, Card::Three, Card::Three], 0);
+    let hand = Hand::new_wild([Card::J, Card::Two, Card::Two, Card::Three, Card::Three], 0);
     assert_eq!(hand.strength, HandStrength::FullHouse);
 
-    let hand = Hand::new([Card::J, Card::Two, Card::Two, Card::Three, Card::Four], 0);
+    let hand = Hand::new_wild([Card::J, Card::Two, Card::Two, Card::Three, Card::Four], 0);
     assert_eq!(hand.strength, HandStrength::ThreeKind);
 
-    let hand = Hand::new([Card::K, Card::K, Card::J, Card::Five, Card::Four], 0);
+    let hand = Hand::new_wild([Card::K, Card::K, Card::J, Card::Five, Card::Four], 0);
     assert_eq!(hand.strength, HandStrength::ThreeKind);
 
-    let hand = Hand::new([Card::K, Card::K, Card::Six, Card::Six, Card::K], 0);
+    let hand = Hand::new_wild([Card::K, Card::K, Card::Six, Card::Six, Card::K], 0);
     assert_eq!(hand.strength, HandStrength::FullHouse);
 
-    let hand = Hand::new([Card::K, Card::Two, Card::K, Card::K, Card::Two], 0);
+    let hand = Hand::new_wild([Card::K, Card::Two, Card::K, Card::K, Card::Two], 0);
     assert_eq!(hand.strength, HandStrength::FullHouse);
 
-    let hand = Hand::new([Card::Q, Card::Two, Card::K, Card::J, Card::J], 0);
+    let hand = Hand::new_wild([Card::Q, Card::Two, Card::K, Card::J, Card::J], 0);
     assert_eq!(hand.strength, HandStrength::ThreeKind);
 }
 
 #[test]
 fn compare_hands() {
-    let first = Hand::new([Card::A, Card::A, Card::A, Card::A, Card::A], 0);
-    let second = Hand::new([Card::A, Card::A, Card::A, Card::A, Card::K], 0);
+    let first = Hand::new_wild([Card::A, Card::A, Card::A, Card::A, Card::A], 0);
+    let second = Hand::new_wild([Card::A, Card::A, Card::A, Card::A, Card::K], 0);
     assert!(first > second);
 
-    let first = Hand::new([Card::A, Card::A, Card::A, Card::J, Card::Q], 0);
-    let second = Hand::new([Card::A, Card::A, Card::A, Card::A, Card::K], 0);
+    let first = Hand::new_wild([Card::A, Card::A, Card::A, Card::J, Card::Q], 0);
+    let second = Hand::new_wild([Card::A, Card::A, Card::A, Card::A, Card::K], 0);
     assert!(first < second);
 
-    let first = Hand::new([Card::A, Card::A, Card::A, Card::K, Card::A], 0);
-    let second = Hand::new([Card::A, Card::A, Card::A, Card::A, Card::Q], 0);
+    let first = Hand::new_wild([Card::A, Card::A, Card::A, Card::K, Card::A], 0);
+    let second = Hand::new_wild([Card::A, Card::A, Card::A, Card::A, Card::Q], 0);
     assert!(first < second);
 
-    let first = Hand::new([Card::A, Card::A, Card::A, Card::Ten, Card::A], 0);
-    let second = Hand::new([Card::A, Card::A, Card::A, Card::A, Card::Q], 0);
+    let first = Hand::new_wild([Card::A, Card::A, Card::A, Card::Ten, Card::A], 0);
+    let second = Hand::new_wild([Card::A, Card::A, Card::A, Card::A, Card::Q], 0);
     assert!(first < second);
 
-    let first = Hand::new([Card::Two, Card::A, Card::A, Card::A, Card::A], 0);
-    let second = Hand::new([Card::A, Card::A, Card::A, Card::A, Card::Q], 0);
+    let first = Hand::new_wild([Card::Two, Card::A, Card::A, Card::A, Card::A], 0);
+    let second = Hand::new_wild([Card::A, Card::A, Card::A, Card::A, Card::Q], 0);
     assert!(first < second);
 
-    let first = Hand::new(
+    let first = Hand::new_wild(
         [
             Card::Three,
             Card::Three,
@@ -398,13 +509,13 @@ fn compare_hands() {
         ],
         0,
     );
-    let second = Hand::new([Card::Two, Card::A, Card::A, Card::A, Card::A], 0);
+    let second = Hand::new_wild([Card::Two, Card::A, Card::A, Card::A, Card::A], 0);
     assert!(first > second);
 }
 
 #[test]
 fn hand_parsing() {
-    let first = Hand::from_string("2JKQA 100 ").expect("Invalid hand format");
+    let first = Hand::from_string("2JKQA 100 ", false).expect("Invalid hand format");
     assert_eq!(first.cards[0], Card::Two);
     assert_eq!(first.cards[1], Card::J);
     assert_eq!(first.cards[2], Card::K);
@@ -423,7 +534,7 @@ fn hand_ranking() {
     for l in lines {
         if l.len() > 0 {
             println!("{l}");
-            hands.push(Hand::from_string(l).expect("Invalid hand format"));
+            hands.push(Hand::from_string(l, true).expect("Invalid hand format"));
         }
     }
 
@@ -452,7 +563,7 @@ fn sample_hard() {
     for l in lines {
         if l.len() > 0 {
             println!("{l}");
-            hands.push(Hand::from_string(l).expect("Invalid hand format"));
+            hands.push(Hand::from_string(l, true).expect("Invalid hand format"));
         }
     }
 
@@ -463,16 +574,3 @@ fn sample_hard() {
     assert_eq!(hands[2].bet, 3);
     assert_eq!(hands[3].bet, 5);
 }
-
-#[test]
-fn part_two_answer() {
-    assert_eq!(part_one(), 253907829);
-}
-
-// Disabled because data is setup for part_two.
-/*
-#[test]
-fn part_one_answer() {
-assert_eq!(part_one(), 253205868);
-}
-*/
