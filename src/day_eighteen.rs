@@ -11,13 +11,18 @@ use crate::perma::line::Line;
 use crate::perma::math::*;
 use crate::perma::v2::V2;
 
-pub fn run() {
-    let v = part_one("resources/inputs/day_18.txt");
+pub fn part_one() {
+    let v = run("resources/inputs/day_18.txt", false);
     println!("{v}");
 }
 
-fn part_one(file_dir: &str) -> f64 {
-    let map = build_points(file_dir);
+pub fn part_two() {
+    let v = run("resources/inputs/day_18.txt", true);
+    println!("{v}");
+}
+
+fn run(file_dir: &str, flip: bool) -> f64 {
+    let map = build_points(file_dir, flip);
     let p = map.perimiter as f64 * 0.5;
     let a = shoelace_area(&map.points) as f64 + p + 1.0;
     return a;
@@ -28,7 +33,7 @@ struct Map {
     perimiter: i64,
 }
 
-fn build_points(file_dir: &str) -> Map {
+fn build_points(file_dir: &str, flip: bool) -> Map {
     let mut ret = Map {
         points: vec![],
         perimiter: 0,
@@ -42,10 +47,10 @@ fn build_points(file_dir: &str) -> Map {
 
     for step_string in lines {
         // part_one
-        //let miner = MineStep::from_string(step_string).unwrap();
-
-        // part_two
-        let miner = MineStep::from_string_flipped(step_string).unwrap();
+        let mut miner = MineStep::from_string(step_string).unwrap();
+        if flip {
+            miner = MineStep::from_string_flipped(step_string).unwrap();
+        }
 
         bot_pos = miner.step(bot_pos);
 

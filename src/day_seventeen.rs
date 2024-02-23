@@ -20,7 +20,7 @@ use crate::perma::twod::TwoD;
 use crate::perma::v2::V2;
 
 pub fn part_one() {
-    let v = min_cost("resources/input/day_17.txt", 3, 0);
+    let v = min_cost("resources/inputs/day_17.txt", 3, 0);
     println!("{v}");
 }
 
