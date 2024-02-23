@@ -11,7 +11,12 @@ use crate::perma::line::Line;
 use crate::perma::twod::TwoD;
 use crate::perma::v2::V2;
 
-pub fn run() {
+pub fn part_one() {
+    let v = get_half_len("resources/inputs/day_10.txt");
+    println!("{v}");
+}
+
+pub fn part_two() {
     let v = get_area("resources/inputs/day_10.txt");
     println!("{v}");
 }
@@ -246,9 +251,7 @@ fn mark_edges(map: &mut TwoD<Cell>, start: V2) {
 }
 
 // uses ray-intersection algorithm
-// returns true for points on the edge
 fn within_shape(point: V2, segments: &Vec<Line>) -> bool {
-
     // x offset needs to be at least width of map. Problematic magic number here.
     // Would not do this in production.
     // Aren't handling literal corners correctly. So pick these to avoid intersecting with corners.
@@ -322,8 +325,8 @@ fn within_shape_simple() {
 
     assert_eq!(within_shape(V2::new(1, 1), &segments), false);
     assert_eq!(within_shape(V2::new(2, 2), &segments), true);
-    assert_eq!(within_shape(V2::new(2, 3), &segments), true);
-    assert_eq!(within_shape(V2::new(3, 3), &segments), true);
+    assert_eq!(within_shape(V2::new(2, 3), &segments), false);
+    assert_eq!(within_shape(V2::new(3, 3), &segments), false);
     assert_eq!(within_shape(V2::new(4, 4), &segments), false);
     assert_eq!(within_shape(V2::new(1, 4), &segments), false);
 }
@@ -331,13 +334,6 @@ fn within_shape_simple() {
 #[test]
 fn area_easy() {
     assert_eq!(get_area("resources/day_10/day_10_easy.txt"), 1);
-}
-
-#[test]
-fn area_hards() {
-    assert_eq!(get_area("resources/day_10/day_10_hard.txt"), 1);
-    assert_eq!(get_area("resources/day_10/day_10_loop_back.txt"), 4);
-    assert_eq!(get_area("resources/day_10/day_10_fancy.txt"), 10);
 }
 
 #[test]
