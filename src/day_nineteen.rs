@@ -11,12 +11,17 @@ use std::collections::HashMap;
 use std::ops::Index;
 use std::ops::IndexMut;
 
-pub fn run() {
-    let v = part_two("resources/inputs/day_19.txt");
+pub fn part_one() {
+    let v = part_one_solve("resources/inputs/day_19.txt");
     println!("{v}");
 }
 
-fn part_one(file_dir: &str) -> i64 {
+pub fn part_two() {
+    let v = part_two_solve("resources/inputs/day_19.txt");
+    println!("{v}");
+}
+
+fn part_one_solve(file_dir: &str) -> i64 {
     let mut file_data = parse_file(file_dir);
 
     let mut sum: i64 = 0;
@@ -32,7 +37,7 @@ fn part_one(file_dir: &str) -> i64 {
     return sum;
 }
 
-fn part_two(file_dir: &str) -> i64 {
+fn part_two_solve(file_dir: &str) -> i64 {
     let mut file_data = parse_file(file_dir);
 
     let pi = PartInstanceRange {
@@ -666,12 +671,12 @@ fn options_count() {
 
 #[test]
 fn part_one_sample() {
-    let v = part_one("resources/day_19/day_19_sample.txt");
+    let v = part_one_solve("resources/day_19/day_19_sample.txt");
     assert_eq!(v, 19114);
 }
 
 #[test]
 fn part_two_sample() {
-    let v = part_two("resources/day_19/day_19_sample.txt");
+    let v = part_two_solve("resources/day_19/day_19_sample.txt");
     assert_eq!(v, 167409079868000);
 }
