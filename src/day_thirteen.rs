@@ -14,13 +14,19 @@
 
 use crate::perma::twod::TwoD;
 
-pub fn run() {
+pub fn part_one() {
     let content = std::fs::read_to_string("resources/inputs/day_13.txt").unwrap();
-    let v = calc(&content);
+    let v = calc(&content, 0);
     println!("{v}");
 }
 
-fn calc(file_data: &str) -> i64 {
+pub fn part_two() {
+    let content = std::fs::read_to_string("resources/inputs/day_13.txt").unwrap();
+    let v = calc(&content, 1);
+    println!("{v}");
+}
+
+fn calc(file_data: &str, required_smudges: i64) -> i64 {
     let mut maps: Vec<String> = vec![];
     let mut accum: String = String::new();
     for l in file_data.lines() {
@@ -39,8 +45,8 @@ fn calc(file_data: &str) -> i64 {
     let mut row_count = 0;
     let mut col_count = 0;
     for m in maps {
-        let c = check_cols(&m);
-        let r = check_rows(&m);
+        let c = check_cols(&m, required_smudges);
+        let r = check_rows(&m, required_smudges);
 
         if c == None && r == None {
             println!("{m}");
@@ -89,7 +95,7 @@ fn build_map(map_data: &str) -> TwoD<char> {
     return map;
 }
 
-fn check_cols(map_data: &str) -> Option<i64> {
+fn check_cols(map_data: &str, required_smudges: i64) -> Option<i64> {
     let mut map = build_map(map_data);
 
     let mut col_checking: i64 = 1;
@@ -136,7 +142,7 @@ fn check_cols(map_data: &str) -> Option<i64> {
 
         // they are symetrical
         // require one smudge
-        if smudge_count == 1 {
+        if smudge_count == required_smudges {
             return Some(col_checking);
         } else {
             col_checking += 1;
@@ -146,7 +152,7 @@ fn check_cols(map_data: &str) -> Option<i64> {
     return None;
 }
 
-fn check_rows(map_data: &str) -> Option<i64> {
+fn check_rows(map_data: &str, required_smudges: i64) -> Option<i64> {
     let mut map = build_map(map_data);
 
     let mut row_checking: i64 = 1;
@@ -193,7 +199,7 @@ fn check_rows(map_data: &str) -> Option<i64> {
 
         // they are symetrical
         // require one smudge
-        if smudge_count == 1 {
+        if smudge_count == required_smudges {
             return Some(row_checking);
         } else {
             row_checking += 1;
@@ -204,44 +210,42 @@ fn check_rows(map_data: &str) -> Option<i64> {
 }
 
 #[test]
-fn colums_ptwo() {
+fn colums_smudge() {
     let contents_one = std::fs::read_to_string("resources/day_13/sample_one.txt").unwrap();
     let contents_two = std::fs::read_to_string("resources/day_13/sample_two.txt").unwrap();
 
-    assert_eq!(check_cols(&contents_one), None);
-    assert_eq!(check_cols(&contents_two), None);
+    assert_eq!(check_cols(&contents_one, 1), None);
+    assert_eq!(check_cols(&contents_two, 1), None);
 }
 
 #[test]
-fn rows_ptwo() {
+fn rows_smudge() {
     let contents_one = std::fs::read_to_string("resources/day_13/sample_one.txt").unwrap();
     let contents_two = std::fs::read_to_string("resources/day_13/sample_two.txt").unwrap();
 
-    assert_eq!(check_rows(&contents_one), Some(3));
-    assert_eq!(check_rows(&contents_two), Some(1));
+    assert_eq!(check_rows(&contents_one, 1), Some(3));
+    assert_eq!(check_rows(&contents_two, 1), Some(1));
 }
 
 #[test]
 fn start_smudge() {
     let contents_two = std::fs::read_to_string("resources/day_13/sample_start_smudge.txt").unwrap();
-    assert_eq!(check_cols(&contents_two), Some(16));
+    assert_eq!(check_cols(&contents_two, 1), Some(16));
 }
 
 #[test]
-fn combined_ptwo() {
+fn combined_smudge() {
     let contents = std::fs::read_to_string("resources/day_13/sample_both.txt").unwrap();
-    assert_eq!(calc(&contents), 400);
+    assert_eq!(calc(&contents, 1), 400);
 }
 
-// these test part one
-/*
 #[test]
 fn colums() {
     let contents_one = std::fs::read_to_string("resources/day_13/sample_one.txt").unwrap();
     let contents_two = std::fs::read_to_string("resources/day_13/sample_two.txt").unwrap();
 
-    assert_eq!(check_cols(&contents_one), Some(5));
-    assert_eq!(check_cols(&contents_two), None);
+    assert_eq!(check_cols(&contents_one, 0), Some(5));
+    assert_eq!(check_cols(&contents_two, 0), None);
 }
 
 #[test]
@@ -249,13 +253,12 @@ fn rows() {
     let contents_one = std::fs::read_to_string("resources/day_13/sample_one.txt").unwrap();
     let contents_two = std::fs::read_to_string("resources/day_13/sample_two.txt").unwrap();
 
-    assert_eq!(check_rows(&contents_one), None);
-    assert_eq!(check_rows(&contents_two), Some(4));
+    assert_eq!(check_rows(&contents_one, 0), None);
+    assert_eq!(check_rows(&contents_two, 0), Some(4));
 }
 
 #[test]
 fn combined() {
     let contents = std::fs::read_to_string("resources/day_13/sample_both.txt").unwrap();
-    assert_eq!(calc(&contents), 405);
+    assert_eq!(calc(&contents, 0), 405);
 }
-*/
