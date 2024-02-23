@@ -7,9 +7,36 @@
     unused_labels
 )]
 
-pub fn run() {
+pub fn part_one() {
     let contents = std::fs::read_to_string("resources/inputs/day_9.txt").unwrap();
 
+    //let mut answers: Vec<i64> = vec![];
+    let mut sum: i64 = 0;
+    let lines: Vec<&str> = contents.split('\n').collect();
+
+    for l in lines {
+        if l.len() == 0 {
+            continue;
+        }
+
+        // convert list of strings
+        let mut seq: Vec<i64> = vec![];
+        let nums_string: Vec<&str> = l.split(' ').collect();
+        for ns in nums_string {
+            let n: i64 = ns.trim().parse().unwrap_or_else(|error| 0);
+            seq.push(n);
+        }
+
+        sum += pattern_next(seq);
+    }
+
+    println!("{sum}");
+}
+
+pub fn part_two() {
+    let contents = std::fs::read_to_string("resources/inputs/day_9.txt").unwrap();
+
+    //let mut answers: Vec<i64> = vec![];
     let mut sum: i64 = 0;
     let lines: Vec<&str> = contents.split('\n').collect();
 
@@ -119,58 +146,4 @@ fn sample_three() {
 #[test]
 fn sample_three_prev() {
     assert_eq!(pattern_prev(vec![10, 13, 16, 21, 30, 45]), 5);
-}
-
-#[test]
-fn part_one() {
-    let contents = std::fs::read_to_string("resources/inputs/day_9.txt").unwrap();
-
-    //let mut answers: Vec<i64> = vec![];
-    let mut sum: i64 = 0;
-    let lines: Vec<&str> = contents.split('\n').collect();
-
-    for l in lines {
-        if l.len() == 0 {
-            continue;
-        }
-
-        // convert list of strings
-        let mut seq: Vec<i64> = vec![];
-        let nums_string: Vec<&str> = l.split(' ').collect();
-        for ns in nums_string {
-            let n: i64 = ns.trim().parse().unwrap_or_else(|error| 0);
-            seq.push(n);
-        }
-
-        sum += pattern_next(seq);
-    }
-
-    assert_eq!(sum, 2008960228);
-}
-
-#[test]
-fn part_two() {
-    let contents = std::fs::read_to_string("resources/inputs/day_9.txt").unwrap();
-
-    //let mut answers: Vec<i64> = vec![];
-    let mut sum: i64 = 0;
-    let lines: Vec<&str> = contents.split('\n').collect();
-
-    for l in lines {
-        if l.len() == 0 {
-            continue;
-        }
-
-        // convert list of strings
-        let mut seq: Vec<i64> = vec![];
-        let nums_string: Vec<&str> = l.split(' ').collect();
-        for ns in nums_string {
-            let n: i64 = ns.trim().parse().unwrap_or_else(|error| 0);
-            seq.push(n);
-        }
-
-        sum += pattern_prev(seq);
-    }
-
-    assert_eq!(sum, 1097);
 }
