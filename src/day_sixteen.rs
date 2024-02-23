@@ -15,12 +15,17 @@
 use crate::perma::twod::TwoD;
 use crate::perma::v2::V2;
 
-pub fn run() {
+pub fn part_one() {
     let contents = std::fs::read_to_string("resources/inputs/day_16.txt").unwrap();
-    part_two(&contents);
+    part_one_solve(&contents);
 }
 
-fn part_two(contents: &str) {
+pub fn part_two() {
+    let contents = std::fs::read_to_string("resources/inputs/day_16.txt").unwrap();
+    part_two_solve(&contents);
+}
+
+fn part_two_solve(contents: &str) {
     let mut map = build_map(&contents);
 
     let mut max: i64 = 0;
@@ -61,7 +66,7 @@ fn part_two(contents: &str) {
     println!("{max}");
 }
 
-fn part_one(contents: &str) {
+fn part_one_solve(contents: &str) {
     let mut map = build_map(&contents);
 
     let v = light_map(
