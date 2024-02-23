@@ -16,8 +16,13 @@
 
 use crate::perma::twod::TwoD;
 use crate::perma::v2::V2;
- 
-pub fn run() {
+
+pub fn part_one() {
+    let v = calculate_distance("resources/inputs/day_11.txt", 2);
+    println!("{v}");
+}
+
+pub fn part_two() {
     let v = calculate_distance("resources/inputs/day_11.txt", 1_000_000);
     println!("{v}");
 }
@@ -199,7 +204,7 @@ fn sample_part_one() {
 }
 
 #[test]
-fn sample_part_two(){ 
+fn sample_part_two() {
     let v = calculate_distance("resources/day_11/day_11_sample.txt", 100);
     assert_eq!(v, 8410);
 }
