@@ -10,4 +10,5 @@ All solutions require inputs located at resources/inputs/day_XX.txt.
 "resources/inputs/day_1.txt"
 
 `cargo run {DAY} {PART}`
+
 `cargo run 5 1` to run solution for day 5 part 1
